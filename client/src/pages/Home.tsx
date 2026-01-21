@@ -2134,7 +2134,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
-      <div className="relative w-full max-w-5xl h-[700px] max-h-[95vh] arcade-frame scanlines overflow-hidden">
+      <div className="relative w-full max-w-4xl aspect-square max-h-[95vh] arcade-frame scanlines overflow-hidden">
         {screen !== "start" && screen !== "win" && (
           <HUD
             approval={screen === "level6" ? gameState.level6.cdoMeter : gameState.approval}
