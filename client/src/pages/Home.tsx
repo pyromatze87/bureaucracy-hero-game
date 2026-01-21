@@ -859,13 +859,27 @@ function Level2({
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string }>({
     show: false, success: false, title: "", text: ""
   });
+  const [usedAttacks, setUsedAttacks] = useState<Set<number>>(new Set());
 
   // Randomize counters
   const counters = useMemo(() => shuffleArray([...PERSONALRAT_COUNTERS]), [round]);
 
   useEffect(() => {
     setTimeout(() => {
-      const attack = PERSONALRAT_ATTACKS[round % PERSONALRAT_ATTACKS.length];
+      // Wähle eine Attacke, die noch nicht verwendet wurde
+      let availableIndices = PERSONALRAT_ATTACKS.map((_, i) => i).filter(i => !usedAttacks.has(i));
+      
+      // Wenn alle Attacken verwendet wurden, setze zurück
+      if (availableIndices.length === 0) {
+        setUsedAttacks(new Set());
+        availableIndices = PERSONALRAT_ATTACKS.map((_, i) => i);
+      }
+      
+      // Wähle zufällig eine verfügbare Attacke
+      const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      const attack = PERSONALRAT_ATTACKS[randomIndex];
+      
+      setUsedAttacks(prev => new Set(Array.from(prev).concat(randomIndex)));
       setCurrentAttack(attack);
       setBattleLog(`Frau Müller setzt "${attack.name}" ein!`);
       setCanPlay(true);
@@ -1518,6 +1532,7 @@ function Level6({
   const [showLightning, setShowLightning] = useState(false);
   const [phase, setPhase] = useState<'enemy' | 'player' | 'cdo'>('enemy');
   const roundRef = useRef(0);
+  const usedEnemyAttacksRef = useRef<Set<number>>(new Set());
 
   const { level6 } = gameState;
 
@@ -1533,7 +1548,20 @@ function Level6({
 
   const enemyTurn = () => {
     setPhase('enemy');
-    const attack = ENEMY_ATTACKS[roundRef.current % ENEMY_ATTACKS.length];
+    
+    // Wähle eine Attacke, die noch nicht verwendet wurde
+    let availableIndices = ENEMY_ATTACKS.map((_, i) => i).filter(i => !usedEnemyAttacksRef.current.has(i));
+    
+    // Wenn alle Attacken verwendet wurden, setze zurück
+    if (availableIndices.length === 0) {
+      usedEnemyAttacksRef.current = new Set();
+      availableIndices = ENEMY_ATTACKS.map((_, i) => i);
+    }
+    
+    // Wähle zufällig eine verfügbare Attacke
+    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    const attack = ENEMY_ATTACKS[randomIndex];
+    usedEnemyAttacksRef.current.add(randomIndex);
     setCurrentAttack(attack);
     setBattleLog(`Frau D.S. Gvo spielt "${attack.name}"!`);
     
