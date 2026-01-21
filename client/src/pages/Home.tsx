@@ -2133,56 +2133,8 @@ export default function Home() {
   const currentLevel = screen === "level1" ? 1 : screen === "level2" ? 2 : screen === "level3" ? 3 : screen === "level4" ? 4 : screen === "level5" ? 5 : 6;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-[#0a0a15] via-[#12121f] to-[#0a0a15]">
-      {/* ARCADE CABINET WRAPPER */}
-      <div className="relative flex flex-col items-center">
-        {/* CABINET TOP - Marquee/Header */}
-        <div className="relative w-full max-w-4xl">
-          <div className="bg-gradient-to-b from-[#2a1a3a] to-[#1a0a2a] rounded-t-3xl border-t-4 border-x-4 border-[#4a3a5a] px-8 py-3 shadow-[inset_0_-10px_30px_rgba(0,0,0,0.5)]">
-            <div className="flex justify-center items-center gap-4">
-              {/* Left Speaker Grill */}
-              <div className="w-16 h-12 bg-[#1a1a2a] rounded-lg border-2 border-[#3a3a4a] flex flex-col justify-center items-center gap-1 shadow-inner">
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-              </div>
-              
-              {/* Marquee Light Box */}
-              <div className="flex-1 bg-gradient-to-b from-[#ff00ff] via-[#ff66ff] to-[#ff00ff] rounded-lg py-2 px-4 shadow-[0_0_20px_#ff00ff,inset_0_2px_10px_rgba(255,255,255,0.3)] border-2 border-[#ff88ff]">
-                <div className="text-center font-arcade text-lg text-white drop-shadow-[0_0_10px_#ffffff] tracking-wider">
-                  🎮 BUREAUCRACY HERO 🎮
-                </div>
-              </div>
-              
-              {/* Right Speaker Grill */}
-              <div className="w-16 h-12 bg-[#1a1a2a] rounded-lg border-2 border-[#3a3a4a] flex flex-col justify-center items-center gap-1 shadow-inner">
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-                <div className="w-10 h-0.5 bg-[#3a3a4a] rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* CABINET MIDDLE - Screen Area with Side Panels */}
-        <div className="relative flex">
-          {/* Left Side Panel */}
-          <div className="hidden lg:flex flex-col w-16 bg-gradient-to-b from-[#2a1a3a] to-[#1a0a2a] border-l-4 border-[#4a3a5a] items-center py-4 gap-4">
-            {/* Decorative Stripes */}
-            <div className="w-8 h-2 bg-[#ff00ff] rounded shadow-[0_0_10px_#ff00ff]"></div>
-            <div className="w-8 h-2 bg-[#00ffff] rounded shadow-[0_0_10px_#00ffff]"></div>
-            <div className="w-8 h-2 bg-[#ffff00] rounded shadow-[0_0_10px_#ffff00]"></div>
-            <div className="flex-1"></div>
-            {/* Coin Return */}
-            <div className="w-10 h-6 bg-[#1a1a2a] rounded border border-[#3a3a4a] flex items-center justify-center">
-              <span className="text-[8px] text-[#666]">COIN</span>
-            </div>
-          </div>
-          
-          {/* MAIN SCREEN */}
-          <div className="relative w-full min-w-[700px] max-w-4xl aspect-square max-h-[75vh] arcade-frame scanlines overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
+      <div className="relative w-full max-w-4xl aspect-square max-h-[95vh] arcade-frame scanlines overflow-hidden">
         {screen !== "start" && screen !== "win" && (
           <HUD
             approval={screen === "level6" ? gameState.level6.cdoMeter : gameState.approval}
@@ -2266,61 +2218,6 @@ export default function Home() {
           
           {screen === "win" && <WinScreen key="win" onRestart={restartGame} gameState={gameState} />}
         </AnimatePresence>
-          </div>
-          
-          {/* Right Side Panel */}
-          <div className="hidden lg:flex flex-col w-16 bg-gradient-to-b from-[#2a1a3a] to-[#1a0a2a] border-r-4 border-[#4a3a5a] items-center py-4 gap-4">
-            {/* Decorative Stripes */}
-            <div className="w-8 h-2 bg-[#ff00ff] rounded shadow-[0_0_10px_#ff00ff]"></div>
-            <div className="w-8 h-2 bg-[#00ffff] rounded shadow-[0_0_10px_#00ffff]"></div>
-            <div className="w-8 h-2 bg-[#ffff00] rounded shadow-[0_0_10px_#ffff00]"></div>
-            <div className="flex-1"></div>
-            {/* Coin Slot */}
-            <div className="w-10 h-8 bg-[#1a1a2a] rounded border border-[#3a3a4a] flex flex-col items-center justify-center">
-              <div className="w-6 h-1 bg-[#2a2a3a] rounded mb-1"></div>
-              <span className="text-[6px] text-[#666]">INSERT</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* CABINET BOTTOM - Control Panel */}
-        <div className="relative w-full max-w-4xl">
-          <div className="bg-gradient-to-b from-[#1a0a2a] to-[#2a1a3a] rounded-b-3xl border-b-4 border-x-4 border-[#4a3a5a] px-8 py-4 shadow-[inset_0_10px_30px_rgba(0,0,0,0.5)]">
-            <div className="flex justify-center items-center gap-8">
-              {/* Joystick Area */}
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-[#1a1a2a] rounded-full border-4 border-[#3a3a4a] shadow-[inset_0_4px_8px_rgba(0,0,0,0.5)] flex items-center justify-center">
-                  <div className="w-4 h-8 bg-gradient-to-b from-[#ff3366] to-[#cc0044] rounded-full shadow-[0_0_10px_#ff3366]"></div>
-                </div>
-                <span className="text-[8px] text-[#666] mt-1 font-arcade">MOVE</span>
-              </div>
-              
-              {/* Button Panel */}
-              <div className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 bg-gradient-to-b from-[#ff0066] to-[#cc0044] rounded-full border-2 border-[#ff3388] shadow-[0_0_15px_#ff0066,inset_0_2px_4px_rgba(255,255,255,0.3)]"></div>
-                  <span className="text-[6px] text-[#666] mt-1">A</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 bg-gradient-to-b from-[#00ff88] to-[#00cc66] rounded-full border-2 border-[#33ffaa] shadow-[0_0_15px_#00ff88,inset_0_2px_4px_rgba(255,255,255,0.3)]"></div>
-                  <span className="text-[6px] text-[#666] mt-1">B</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 bg-gradient-to-b from-[#ffff00] to-[#cccc00] rounded-full border-2 border-[#ffff66] shadow-[0_0_15px_#ffff00,inset_0_2px_4px_rgba(255,255,255,0.3)]"></div>
-                  <span className="text-[6px] text-[#666] mt-1">C</span>
-                </div>
-              </div>
-              
-              {/* Credits Display */}
-              <div className="flex flex-col items-center">
-                <div className="bg-[#0a0a15] px-4 py-2 rounded border border-[#3a3a4a] shadow-inner">
-                  <span className="font-arcade text-[#00ff00] text-sm">CREDIT: 99</span>
-                </div>
-                <span className="text-[8px] text-[#666] mt-1">FREE PLAY</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
