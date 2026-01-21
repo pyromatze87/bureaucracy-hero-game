@@ -1109,7 +1109,12 @@ function Level3({
     setFeedback({ ...feedback, show: false });
     setAnswered(false);
     
-    if (currentQuestion + 1 >= SURVEY_RESULTS.length) {
+    // currentQuestion wurde bereits durch onAnswer erhöht, daher prüfen wir ob wir bei der letzten Frage sind
+    // currentQuestion ist 0-basiert, SURVEY_RESULTS.length ist 3
+    // Nach Frage 1 (Index 0): currentQuestion wird 1, noch 2 Fragen übrig
+    // Nach Frage 2 (Index 1): currentQuestion wird 2, noch 1 Frage übrig  
+    // Nach Frage 3 (Index 2): currentQuestion wird 3, keine Fragen mehr -> Level complete
+    if (currentQuestion >= SURVEY_RESULTS.length) {
       playLevelUpSound();
       setShowLevelComplete(true);
     }
@@ -1424,7 +1429,8 @@ function Level5({
     setFeedback({ ...feedback, show: false });
     setAnswered(false);
     
-    if (currentQuestion + 1 >= DATA_QUESTIONS.length) {
+    // currentQuestion wurde bereits durch onAnswer erhöht, daher prüfen wir ob alle Fragen beantwortet sind
+    if (currentQuestion >= DATA_QUESTIONS.length) {
       playLevelUpSound();
       setShowLevelComplete(true);
     }
