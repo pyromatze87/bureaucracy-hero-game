@@ -1162,7 +1162,7 @@ function Level3({
     }
   };
 
-  // Wenn alle Fragen beantwortet wurden, zeige nur das LevelCompleteModal
+  // Wenn alle Fragen beantwortet wurden, zeige das LevelCompleteModal direkt
   if (!survey) {
     return (
       <motion.div
@@ -1172,7 +1172,7 @@ function Level3({
         className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
       >
         <LevelCompleteModal
-          isOpen={showLevelComplete}
+          isOpen={true}
           levelNumber={3}
           onContinue={onComplete}
         />
@@ -1494,7 +1494,7 @@ function Level5({
     }
   };
 
-  // Wenn alle Fragen beantwortet wurden, zeige nur das LevelCompleteModal
+  // Wenn alle Fragen beantwortet wurden, zeige das LevelCompleteModal direkt
   if (!question) {
     return (
       <motion.div
@@ -1504,7 +1504,7 @@ function Level5({
         className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
       >
         <LevelCompleteModal
-          isOpen={showLevelComplete}
+          isOpen={true}
           levelNumber={5}
           onContinue={onComplete}
         />
