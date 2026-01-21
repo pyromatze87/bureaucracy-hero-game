@@ -129,6 +129,34 @@ const PERSONALRAT_ATTACKS = [
     damage: 15,
     bias: "present-bias",
     explanation: "Present Bias (O'Donoghue & Rabin, 1999): Kurzfristige Kosten (Schulung) werden überbewertet, langfristige Vorteile (Effizienz) systematisch unterschätzt."
+  },
+  { 
+    name: "Betriebsvereinbarungs-Forderung", 
+    text: "Ohne Betriebsvereinbarung läuft hier gar nichts! Das dauert mindestens 18 Monate!", 
+    damage: 18,
+    bias: "anchoring",
+    explanation: "Anchoring Bias (Tversky & Kahneman, 1974): Die genannte Zeitspanne von 18 Monaten setzt einen Anker, der die Erwartungen prägt – auch wenn kürzere Zeiträume möglich wären."
+  },
+  { 
+    name: "Datenschutz-Bedenken", 
+    text: "Und was passiert mit den Daten unserer Beschäftigten? Wer garantiert den Schutz?!", 
+    damage: 22,
+    bias: "availability",
+    explanation: "Availability Heuristic (Tversky & Kahneman, 1973): Datenschutzskandale sind medial präsent und werden daher als wahrscheinlicher eingeschätzt, als sie statistisch sind."
+  },
+  { 
+    name: "Gewerkschafts-Drohung", 
+    text: "Die Gewerkschaft wird das nicht einfach hinnehmen! Wir haben Kontakte!", 
+    damage: 20,
+    bias: "social-proof",
+    explanation: "Social Proof (Cialdini, 1984): Der Verweis auf die Gewerkschaft als Autorität soll Druck ausüben. Menschen orientieren sich an dem, was andere (wichtige Gruppen) tun oder denken."
+  },
+  { 
+    name: "Präzedenzfall-Warnung", 
+    text: "Wenn wir hier nachgeben, kommt als nächstes die komplette Automatisierung!", 
+    damage: 18,
+    bias: "slippery-slope",
+    explanation: "Slippery Slope Fallacy: Die Annahme, dass ein kleiner Schritt unweigerlich zu extremen Konsequenzen führt. Logisch nicht zwingend, aber emotional wirksam."
   }
 ];
 
@@ -859,7 +887,7 @@ function Level2({
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string }>({
     show: false, success: false, title: "", text: ""
   });
-  const [usedAttacks, setUsedAttacks] = useState<Set<number>>(new Set());
+  const usedAttacksRef = useRef<Set<number>>(new Set());
 
   // Randomize counters
   const counters = useMemo(() => shuffleArray([...PERSONALRAT_COUNTERS]), [round]);
@@ -867,11 +895,11 @@ function Level2({
   useEffect(() => {
     setTimeout(() => {
       // Wähle eine Attacke, die noch nicht verwendet wurde
-      let availableIndices = PERSONALRAT_ATTACKS.map((_, i) => i).filter(i => !usedAttacks.has(i));
+      let availableIndices = PERSONALRAT_ATTACKS.map((_, i) => i).filter(i => !usedAttacksRef.current.has(i));
       
       // Wenn alle Attacken verwendet wurden, setze zurück
       if (availableIndices.length === 0) {
-        setUsedAttacks(new Set());
+        usedAttacksRef.current = new Set();
         availableIndices = PERSONALRAT_ATTACKS.map((_, i) => i);
       }
       
@@ -879,7 +907,7 @@ function Level2({
       const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
       const attack = PERSONALRAT_ATTACKS[randomIndex];
       
-      setUsedAttacks(prev => new Set(Array.from(prev).concat(randomIndex)));
+      usedAttacksRef.current.add(randomIndex);
       setCurrentAttack(attack);
       setBattleLog(`Frau Müller setzt "${attack.name}" ein!`);
       setCanPlay(true);
@@ -1134,7 +1162,23 @@ function Level3({
     }
   };
 
-  if (!survey) return null;
+  // Wenn alle Fragen beantwortet wurden, zeige nur das LevelCompleteModal
+  if (!survey) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
+      >
+        <LevelCompleteModal
+          isOpen={showLevelComplete}
+          levelNumber={3}
+          onContinue={onComplete}
+        />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -1450,7 +1494,23 @@ function Level5({
     }
   };
 
-  if (!question) return null;
+  // Wenn alle Fragen beantwortet wurden, zeige nur das LevelCompleteModal
+  if (!question) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
+      >
+        <LevelCompleteModal
+          isOpen={showLevelComplete}
+          levelNumber={5}
+          onContinue={onComplete}
+        />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
