@@ -760,12 +760,12 @@ function Level1({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 pb-16 bg-[#141428]/98 overflow-y-auto"
+      className="absolute inset-0 flex flex-col items-center justify-start p-8 pt-32 pb-16 bg-[#141428]/98 overflow-y-auto"
     >
       <CoffeeEasterEgg onFind={onCoffeeFind} />
       
-      <h2 className="font-pixel text-xl text-primary mb-2 neon-text-pink">Level 1: Die Diagnose</h2>
-      <p className="text-gray-400 mb-6 text-center text-sm">Erkenne die psychologischen Barrieren in der E-Mail der Datenschutzbeauftragten</p>
+      <h2 className="font-pixel text-xl text-primary mb-2 mt-8 neon-text-pink">Level 1: Die Diagnose</h2>
+      <p className="text-gray-400 mb-6 text-center text-sm max-w-lg">Erkenne die psychologischen Barrieren in der E-Mail der Datenschutzbeauftragten</p>
 
       <div className="bg-gradient-to-b from-[#3d3d5c] to-[#2d2d44] border-3 border-gray-600 rounded-xl p-6 w-full max-w-3xl">
         <div className="bg-white text-gray-800 p-5 rounded-lg mb-5 border-2 border-gray-300">
