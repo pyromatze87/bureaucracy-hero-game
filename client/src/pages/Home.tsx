@@ -72,6 +72,46 @@ const playAttackSound = () => {
 };
 
 // ==================== UTILITY FUNCTIONS ====================
+
+// LocalStorage Keys
+const STORAGE_KEY = 'bureaucracy-hero-save';
+
+// Speichern des Spielstands
+const saveGameProgress = (screen: string, gameState: GameState) => {
+  try {
+    const saveData = {
+      screen,
+      gameState,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+  } catch (e) {
+    console.error('Fehler beim Speichern:', e);
+  }
+};
+
+// Laden des Spielstands
+const loadGameProgress = (): { screen: string; gameState: GameState; savedAt: string } | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Fehler beim Laden:', e);
+  }
+  return null;
+};
+
+// Löschen des Spielstands
+const clearGameProgress = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    console.error('Fehler beim Löschen:', e);
+  }
+};
+
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -1824,18 +1864,36 @@ function Level6({
   );
 }
 
-// Win Screen - ERWEITERT mit umfangreicherem Abspann
+// Win Screen - ERWEITERT mit umfangreicherem Abspann und Reflexions-Zusammenfassung
 function WinScreen({ onRestart, gameState }: { onRestart: () => void; gameState: GameState }) {
   const [showCredits, setShowCredits] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
+
+  // Lösche den Spielstand beim Sieg
+  useEffect(() => {
+    clearGameProgress();
+  }, []);
+
+  // Berechne Gesamtpunktzahl
+  const totalScore = (
+    gameState.level1.biasesFound * 100 +
+    (gameState.level2.completed ? 150 : 0) +
+    gameState.level3.correctChoices * 100 +
+    gameState.level4.storiesPlaced * 80 +
+    gameState.level5.correctChoices * 100 +
+    (gameState.level6.completed ? 200 : 0) +
+    (gameState.coffeeFound ? 50 : 0) +
+    (gameState.faxTriggered ? 50 : 0)
+  );
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-green-600/95 to-teal-700/95 overflow-y-auto"
+      className="absolute inset-0 flex flex-col items-center justify-start p-4 pt-6 bg-gradient-to-b from-green-600/95 to-teal-700/95 overflow-y-auto"
     >
       <motion.h1
-        className="font-pixel text-xl text-white mb-4"
+        className="font-pixel text-lg text-white mb-3"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", delay: 0.2 }}
@@ -1845,23 +1903,28 @@ function WinScreen({ onRestart, gameState }: { onRestart: () => void; gameState:
       </motion.h1>
 
       <motion.div
-        className="bg-white/95 text-gray-800 p-5 rounded-xl max-w-2xl text-center max-h-[60vh] overflow-y-auto"
+        className="bg-white/95 text-gray-800 p-4 rounded-xl max-w-2xl text-center max-h-[75vh] overflow-y-auto"
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4 }}
       >
-        <p className="text-base leading-relaxed mb-3">
+        <p className="text-sm leading-relaxed mb-2">
           <strong>Die CDO ist überzeugt!</strong> Die Online-Funktion von BärGPT wird freigeschaltet.
         </p>
-        <p className="text-sm leading-relaxed mb-3">
-          Sabine kann jetzt aktuelle Gesetze abfragen, Bürgeranträge schneller bearbeiten und muss keine unsicheren Workarounds mehr nutzen.
+        <p className="text-xs leading-relaxed mb-3 text-gray-600">
+          Sabine kann jetzt aktuelle Gesetze abfragen und Bürgeranträge schneller bearbeiten.
           <strong> Die Berliner Verwaltung macht einen großen Schritt in die digitale Zukunft!</strong>
         </p>
+
+        {/* Punktzahl */}
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg p-3 mb-3">
+          <div className="font-pixel text-lg">🏆 PUNKTZAHL: {totalScore}</div>
+        </div>
         
         {/* Statistiken */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 text-left text-sm mb-4">
-          <h4 className="font-bold text-blue-800 mb-2">📊 Deine Statistiken:</h4>
-          <div className="grid grid-cols-2 gap-2 text-blue-700 text-xs">
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-2 text-left text-xs mb-3">
+          <h4 className="font-bold text-blue-800 mb-1 text-sm">📊 Deine Statistiken:</h4>
+          <div className="grid grid-cols-2 gap-1 text-blue-700">
             <div>✅ Biases erkannt: {gameState.level1.biasesFound}/3</div>
             <div>📞 Personalrat überzeugt: ✓</div>
             <div>📋 Umfrage analysiert: {gameState.level3.correctChoices}/3</div>
@@ -1871,22 +1934,82 @@ function WinScreen({ onRestart, gameState }: { onRestart: () => void; gameState:
           </div>
         </div>
 
-        {/* Learnings */}
-        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-3 text-left text-sm mb-4">
-          <h4 className="font-bold text-green-800 mb-2">📚 Was du gelernt hast:</h4>
-          <ul className="space-y-1 text-green-700 text-xs">
-            <li>• <strong>Kognitive Verzerrungen erkennen</strong> – Verlust-Aversion, Zero-Risk Bias, Omission Bias (Kahneman & Tversky, 1979)</li>
-            <li>• <strong>Stakeholder-Management</strong> – Verschiedene Gruppen haben verschiedene Bedenken</li>
-            <li>• <strong>Narrative Transportation</strong> – Geschichten überzeugen mehr als Fakten (Green & Brock, 2000)</li>
-            <li>• <strong>Pre-Suasion</strong> – Den Rahmen setzen, bevor man argumentiert (Cialdini, 2016)</li>
-            <li>• <strong>Datenvisualisierung</strong> – Die richtige Darstellung für das richtige Publikum</li>
+        {/* Reflexions-Zusammenfassung Toggle */}
+        <button
+          onClick={() => setShowReflection(!showReflection)}
+          className="w-full text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2 px-3 rounded-lg mb-2 transition-colors"
+        >
+          {showReflection ? "▼ Reflexion ausblenden" : "🎓 REFLEXIONS-ZUSAMMENFASSUNG ANZEIGEN"}
+        </button>
+
+        {showReflection && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            className="bg-purple-50 border-2 border-purple-200 rounded-lg p-3 text-left text-xs mb-3"
+          >
+            <h4 className="font-bold text-purple-800 mb-2 text-sm">🎓 Reflexion: Was hast du gelernt?</h4>
+            
+            <div className="space-y-3 text-purple-900">
+              <div className="bg-white/70 rounded p-2">
+                <h5 className="font-bold text-purple-700 mb-1">1. Kognitive Verzerrungen (Level 1)</h5>
+                <p className="mb-1">Du hast gelernt, <strong>Verlust-Aversion</strong>, <strong>Zero-Risk Bias</strong> und <strong>Omission Bias</strong> zu erkennen.</p>
+                <p className="text-purple-600 italic">Praxistipp: Wenn jemand "Das Risiko ist zu hoch" sagt, frage: "Im Vergleich wozu? Was ist das Risiko des Nicht-Handelns?"</p>
+              </div>
+
+              <div className="bg-white/70 rounded p-2">
+                <h5 className="font-bold text-purple-700 mb-1">2. Stakeholder-Kommunikation (Level 2)</h5>
+                <p className="mb-1">Du hast gelernt, auf <strong>verschiedene Bedenken</strong> einzugehen: Mitbestimmung, Arbeitsplatzsicherheit, Schulungsbedarf.</p>
+                <p className="text-purple-600 italic">Praxistipp: Höre erst zu und verstehe die Bedenken, bevor du Lösungen präsentierst.</p>
+              </div>
+
+              <div className="bg-white/70 rounded p-2">
+                <h5 className="font-bold text-purple-700 mb-1">3. Bedürfnisanalyse (Level 3)</h5>
+                <p className="mb-1">Du hast gelernt, <strong>Bedarfsabfragen</strong> zu interpretieren und die wahren Bedürfnisse hinter den Aussagen zu erkennen.</p>
+                <p className="text-purple-600 italic">Praxistipp: Quantitative Daten zeigen WAS, qualitative Daten erklären WARUM.</p>
+              </div>
+
+              <div className="bg-white/70 rounded p-2">
+                <h5 className="font-bold text-purple-700 mb-1">4. Narrative Transportation (Level 4)</h5>
+                <p className="mb-1">Du hast die <strong>Heldenreise</strong> (Campbell, 1949) angewendet, um eine überzeugende Geschichte zu erzählen.</p>
+                <p className="text-purple-600 italic">Praxistipp: Menschen erinnern sich an Geschichten 22x besser als an Fakten (Stanford Research).</p>
+              </div>
+
+              <div className="bg-white/70 rounded p-2">
+                <h5 className="font-bold text-purple-700 mb-1">5. Datenvisualisierung (Level 5)</h5>
+                <p className="mb-1">Du hast gelernt, <strong>die richtige Visualisierung</strong> für das richtige Publikum zu wählen.</p>
+                <p className="text-purple-600 italic">Praxistipp: Führungskräfte wollen Trends sehen, Fachleute wollen Details.</p>
+              </div>
+
+              <div className="bg-white/70 rounded p-2">
+                <h5 className="font-bold text-purple-700 mb-1">6. Überzeugungsstrategien (Level 6)</h5>
+                <p className="mb-1">Du hast <strong>Cialdinis Prinzipien</strong> angewendet: Social Proof, Autorität, Reziprozität, Konsistenz.</p>
+                <p className="text-purple-600 italic">Praxistipp: "Andere Behörden machen das bereits erfolgreich" ist oft überzeugender als technische Argumente.</p>
+              </div>
+            </div>
+
+            <div className="mt-3 p-2 bg-purple-200 rounded text-center">
+              <p className="font-bold text-purple-800">Kernbotschaft:</p>
+              <p className="text-purple-700">Veränderung in Organisationen gelingt nicht durch bessere Argumente, sondern durch besseres Verstehen der Menschen.</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Learnings - kompakter */}
+        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-2 text-left text-xs mb-2">
+          <h4 className="font-bold text-green-800 mb-1 text-sm">📚 Wissenschaftliche Grundlagen:</h4>
+          <ul className="space-y-0.5 text-green-700">
+            <li>• <strong>Prospect Theory</strong> – Kahneman & Tversky (1979)</li>
+            <li>• <strong>Narrative Transportation</strong> – Green & Brock (2000)</li>
+            <li>• <strong>Pre-Suasion</strong> – Cialdini (2016)</li>
+            <li>• <strong>Hero's Journey</strong> – Campbell (1949)</li>
           </ul>
         </div>
 
         {/* Credits Toggle */}
         <button
           onClick={() => setShowCredits(!showCredits)}
-          className="text-xs text-gray-500 hover:text-gray-700 mb-3"
+          className="text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           {showCredits ? "▼ Credits ausblenden" : "▶ Credits anzeigen"}
         </button>
@@ -1895,33 +2018,31 @@ function WinScreen({ onRestart, gameState }: { onRestart: () => void; gameState:
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
-            className="bg-gray-100 rounded-lg p-3 text-left text-xs mb-4"
+            className="bg-gray-100 rounded-lg p-2 text-left text-xs mb-2"
           >
-            <h4 className="font-bold text-gray-800 mb-2">🎬 Credits</h4>
-            <div className="text-gray-600 space-y-1">
+            <h4 className="font-bold text-gray-800 mb-1">🎬 Credits</h4>
+            <div className="text-gray-600 space-y-0.5">
               <p><strong>Konzept & Design:</strong> Universitäres Projekt</p>
               <p><strong>Wissenschaftliche Grundlagen:</strong></p>
-              <ul className="ml-4 space-y-1">
-                <li>• Kahneman, D. & Tversky, A. (1979). Prospect Theory</li>
-                <li>• Cialdini, R. (2006). Influence: The Psychology of Persuasion</li>
-                <li>• Cialdini, R. (2016). Pre-Suasion</li>
-                <li>• Campbell, J. (1949). The Hero with a Thousand Faces</li>
-                <li>• Green, M. & Brock, T. (2000). Narrative Transportation</li>
-                <li>• Baron, J. (2000). Thinking and Deciding</li>
-                <li>• Damasio, A. (1994). Descartes' Error</li>
+              <ul className="ml-3">
+                <li>• Kahneman, D. & Tversky, A. (1979). Prospect Theory. Econometrica, 47(2), 263-291.</li>
+                <li>• Cialdini, R. (2006). Influence: The Psychology of Persuasion. Harper Business.</li>
+                <li>• Cialdini, R. (2016). Pre-Suasion. Simon & Schuster.</li>
+                <li>• Campbell, J. (1949). The Hero with a Thousand Faces. Pantheon Books.</li>
+                <li>• Green, M. & Brock, T. (2000). Journal of Personality and Social Psychology, 79(5).</li>
+                <li>• Baron, J. (2000). Thinking and Deciding. Cambridge University Press.</li>
               </ul>
-              <p className="mt-2"><strong>Technologie:</strong> React, TypeScript, Framer Motion</p>
-              <p><strong>Inspiration:</strong> Die echten Herausforderungen der Verwaltungsdigitalisierung</p>
+              <p className="mt-1"><strong>Technologie:</strong> React, TypeScript, Framer Motion</p>
             </div>
           </motion.div>
         )}
 
         {/* Easter Egg Hinweis */}
-        {gameState.coffeeFound && (
-          <p className="text-xs text-amber-600 mb-3">☕ Du hast den versteckten Kaffee gefunden!</p>
-        )}
-        {gameState.faxTriggered && (
-          <p className="text-xs text-amber-600 mb-3">📠 Du hast das Fax-Easter-Egg entdeckt!</p>
+        {(gameState.coffeeFound || gameState.faxTriggered) && (
+          <div className="text-xs text-amber-600 mb-2">
+            {gameState.coffeeFound && <span>☕ Kaffee gefunden! (+50 Punkte) </span>}
+            {gameState.faxTriggered && <span>📠 Fax-Easter-Egg entdeckt! (+50 Punkte)</span>}
+          </div>
         )}
       </motion.div>
 
@@ -1942,9 +2063,12 @@ function WinScreen({ onRestart, gameState }: { onRestart: () => void; gameState:
 export default function Home() {
   const [screen, setScreen] = useState<GameScreen>("start");
   const [showFaxModal, setShowFaxModal] = useState(false);
-  const [gameState, setGameState] = useState<GameState>({
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [savedProgress, setSavedProgress] = useState<{ screen: string; gameState: GameState; savedAt: string } | null>(null);
+  
+  const initialGameState: GameState = {
     currentLevel: 1,
-    approval: 30, // FIXED: Startet bei 30% (orange) statt 50%
+    approval: 30,
     energy: 100,
     coffeeFound: false,
     faxTriggered: false,
@@ -1954,10 +2078,44 @@ export default function Home() {
     level4: { storiesPlaced: 0, completed: false },
     level5: { currentQuestion: 0, correctChoices: 0, completed: false },
     level6: { playerHP: 100, enemyHP: 100, cdoMeter: 30, round: 0, completed: false }
-  });
+  };
+  
+  const [gameState, setGameState] = useState<GameState>(initialGameState);
+
+  // Prüfe beim Start auf gespeicherten Fortschritt
+  useEffect(() => {
+    const saved = loadGameProgress();
+    if (saved && saved.screen !== 'start' && saved.screen !== 'win') {
+      setSavedProgress(saved);
+      setShowContinueModal(true);
+    }
+  }, []);
+
+  // Speichere Fortschritt bei jeder Änderung (außer Start und Win)
+  useEffect(() => {
+    if (screen !== 'start' && screen !== 'win') {
+      saveGameProgress(screen, gameState);
+    }
+  }, [screen, gameState]);
 
   const startGame = useCallback(() => {
+    clearGameProgress();
+    setGameState(initialGameState);
     setScreen("level1");
+  }, []);
+
+  const continueGame = useCallback(() => {
+    if (savedProgress) {
+      setGameState(savedProgress.gameState);
+      setScreen(savedProgress.screen as GameScreen);
+      setShowContinueModal(false);
+    }
+  }, [savedProgress]);
+
+  const startNewGame = useCallback(() => {
+    clearGameProgress();
+    setShowContinueModal(false);
+    setGameState(initialGameState);
   }, []);
 
   const handleCoffeeFind = useCallback(() => {
@@ -2114,19 +2272,8 @@ export default function Home() {
   }, []);
 
   const restartGame = useCallback(() => {
-    setGameState({
-      currentLevel: 1,
-      approval: 30,
-      energy: 100,
-      coffeeFound: false,
-      faxTriggered: false,
-      level1: { biasesFound: 0, completed: false },
-      level2: { round: 0, personalratHP: 100, playerHP: 100, completed: false },
-      level3: { currentQuestion: 0, correctChoices: 0, completed: false },
-      level4: { storiesPlaced: 0, completed: false },
-      level5: { currentQuestion: 0, correctChoices: 0, completed: false },
-      level6: { playerHP: 100, enemyHP: 100, cdoMeter: 30, round: 0, completed: false }
-    });
+    clearGameProgress();
+    setGameState(initialGameState);
     setScreen("start");
   }, []);
 
@@ -2145,6 +2292,54 @@ export default function Home() {
         )}
 
         <FaxModal isOpen={showFaxModal} onClose={() => setShowFaxModal(false)} />
+
+        {/* Continue Game Modal */}
+        <AnimatePresence>
+          {showContinueModal && savedProgress && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center z-[2000] bg-black/80"
+            >
+              <motion.div
+                className="bg-gradient-to-b from-blue-600 to-blue-800 text-white p-6 rounded-xl max-w-md text-center border-4 border-blue-300 shadow-2xl"
+                initial={{ scale: 0.5, y: 50 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ type: "spring", damping: 15 }}
+              >
+                <div className="text-5xl mb-4">💾</div>
+                <h3 className="font-pixel text-lg mb-3">Spielstand gefunden!</h3>
+                <p className="text-sm mb-2 opacity-90">
+                  Du hast einen gespeicherten Fortschritt:
+                </p>
+                <div className="bg-blue-900/50 rounded-lg p-3 mb-4 text-xs">
+                  <p><strong>Level:</strong> {savedProgress.screen.replace('level', 'Level ')}</p>
+                  <p><strong>Zustimmung:</strong> {savedProgress.gameState.approval}%</p>
+                  <p><strong>Gespeichert:</strong> {new Date(savedProgress.savedAt).toLocaleString('de-DE')}</p>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <motion.button
+                    onClick={continueGame}
+                    className="font-pixel text-xs bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    FORTSETZEN
+                  </motion.button>
+                  <motion.button
+                    onClick={startNewGame}
+                    className="font-pixel text-xs bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg shadow-lg transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    NEU STARTEN
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait">
           {screen === "start" && (
