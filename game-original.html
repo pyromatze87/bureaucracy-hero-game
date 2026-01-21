@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bureaucracy Hero: The BärGPT Protocol</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 1000px;
+            height: 700px;
+            max-width: 98vw;
+            max-height: 98vh;
+            background: linear-gradient(180deg, #2d2d44 0%, #1a1a2e 100%);
+            border: 4px solid #e94560;
+            border-radius: 12px;
+            box-shadow: 0 0 60px rgba(233, 69, 96, 0.3), inset 0 0 100px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* HUD */
+        .hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .hud-left, .hud-right {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #e94560;
+            border-radius: 8px;
+            padding: 12px 18px;
+            pointer-events: auto;
+        }
+
+        .hud-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #e94560;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .approval-bar {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #555;
+        }
+
+        .approval-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #f39c12, #27ae60);
+            transition: width 0.5s ease;
+            border-radius: 8px;
+        }
+
+        .level-indicator {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: #f1c40f;
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            background: linear-gradient(180deg, rgba(26,26,46,0.95) 0%, rgba(15,52,96,0.95) 100%);
+        }
+
+        .game-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 28px;
+            color: #e94560;
+            text-shadow: 4px 4px 0 #000, 0 0 20px rgba(233, 69, 96, 0.5);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .game-subtitle {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: #f1c40f;
+            margin-bottom: 40px;
+        }
+
+        .intro-box {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 700px;
+            text-align: left;
+            border: 4px solid #e94560;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .intro-box h3 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .intro-box p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .intro-box .level-preview {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .level-preview-item {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #e94560;
+        }
+
+        .level-preview-item strong {
+            color: #e94560;
+        }
+
+        .btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 30px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #f1c40f 0%, #d35400 100%);
+            color: #fff;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+            box-shadow: 0 6px 0 #a04000, 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #a04000, 0 14px 25px rgba(0,0,0,0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #a04000;
+        }
+
+        /* Level Screens */
+        .level-screen {
+            background: rgba(20, 20, 35, 0.98);
+            padding: 80px 40px 40px;
+        }
+
+        .level-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px;
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+
+        .level-subtitle {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+
+        /* Level 1: Bias Scanner */
+        .office-scene {
+            background: linear-gradient(180deg, #3d3d5c 0%, #2d2d44 100%);
+            border: 3px solid #555;
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .email-display {
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+            border: 2px solid #ddd;
+            position: relative;
+        }
+
+        .email-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .email-from {
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .highlight-zone {
+            background: #fff3cd;
+            padding: 2px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline;
+        }
+
+        .highlight-zone:hover {
+            background: #ffc107;
+        }
+
+        .highlight-zone.correct {
+            background: #28a745;
+            color: white;
+        }
+
+        .highlight-zone.incorrect {
+            background: #dc3545;
+            color: white;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .bias-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .bias-chip {
+            background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: grab;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.2s;
+            user-select: none;
+            border: 2px solid #1a5276;
+        }
+
+        .bias-chip:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .bias-chip.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .bias-chip.used {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        /* Level 2: Narrative Puzzle */
+        .timeline-container {
+            width: 100%;
+            max-width: 850px;
+        }
+
+        .timeline {
+            display: flex;
+            gap: 10px;
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 12px;
+            border: 3px solid #e94560;
+            min-height: 120px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .timeline-slot {
+            width: 140px;
+            height: 90px;
+            background: rgba(233, 69, 96, 0.2);
+            border: 2px dashed #e94560;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            color: #e94560;
+            text-align: center;
+            padding: 8px;
+            transition: all 0.2s;
+        }
+
+        .timeline-slot.filled {
+            background: rgba(39, 174, 96, 0.3);
+            border: 2px solid #27ae60;
+            color: #27ae60;
+        }
+
+        .timeline-slot.wrong {
+            background: rgba(231, 76, 60, 0.3);
+            border: 2px solid #e74c3c;
+        }
+
+        .story-blocks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .story-block {
+            background: linear-gradient(180deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 12px;
+            max-width: 180px;
+            text-align: center;
+            transition: all 0.2s;
+            border: 2px solid #7d3c98;
+        }
+
+        .story-block:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(155, 89, 182, 0.4);
+        }
+
+        .story-block.placed {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Level 3: Data Intelligence */
+        .lab-scene {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .data-question {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .data-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .data-option {
+            background: #fff;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .data-option:hover {
+            border-color: #3498db;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .data-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+
+        .data-option.wrong {
+            border-color: #e74c3c;
+            background: #f8d7da;
+        }
+
+        .data-option img, .data-option .chart-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-preview {
+            font-size: 40px;
+        }
+
+        .data-option-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        /* Level 4: Boss Battle */
+        .battle-arena {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .character-panel {
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #555;
+        }
+
+        .character-avatar {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .character-name {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #f1c40f;
+            margin-bottom: 10px;
+        }
+
+        .character-hp-bar {
+            height: 15px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #555;
+        }
+
+        .character-hp-fill {
+            height: 100%;
+            transition: width 0.5s;
+        }
+
+        .hp-fill-player {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+        }
+
+        .hp-fill-enemy {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        .battle-center {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            border-radius: 12px;
+            padding: 25px;
+            min-height: 300px;
+        }
+
+        .battle-log {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 100px;
+            overflow-y: auto;
+            border: 2px solid #ddd;
+        }
+
+        .enemy-attack {
+            background: #f8d7da;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #721c24;
+        }
+
+        .card-hand {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .battle-card {
+            background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            width: 130px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .battle-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-color: #e94560;
+        }
+
+        .battle-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .card-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .card-effect {
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* CDO Panel */
+        .cdo-panel {
+            background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+            border: 2px solid #f1c40f;
+        }
+
+        .cdo-meter {
+            margin-top: 15px;
+        }
+
+        .cdo-meter-label {
+            font-size: 10px;
+            color: #f1c40f;
+            margin-bottom: 5px;
+        }
+
+        .cdo-meter-bar {
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #f1c40f;
+        }
+
+        .cdo-meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            transition: width 0.5s;
+        }
+
+        /* Feedback Modal */
+        .feedback-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            color: #333;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            border: 4px solid #333;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .feedback-modal.active {
+            display: block;
+        }
+
+        .feedback-modal.success {
+            border-color: #27ae60;
+        }
+
+        .feedback-modal.error {
+            border-color: #e74c3c;
+        }
+
+        .feedback-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .feedback-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .feedback-text {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Win Screen */
+        #win-screen {
+            background: linear-gradient(180deg, rgba(39, 174, 96, 0.95) 0%, rgba(22, 160, 133, 0.95) 100%);
+        }
+
+        .win-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 32px;
+            color: #fff;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .win-message {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: slideIn 0.5s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .game-title { font-size: 18px; }
+            .intro-box { padding: 20px; }
+            .level-preview { grid-template-columns: 1fr; }
+            .battle-arena { grid-template-columns: 1fr; }
+            .data-options { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- HUD -->
+    <div class="hud" id="hud" style="display: none;">
+        <div class="hud-left">
+            <div class="hud-label">Zustimmung des CDO</div>
+            <div class="approval-bar">
+                <div class="approval-fill" id="approval-fill" style="width: 50%;"></div>
+            </div>
+        </div>
+        <div class="hud-right">
+            <div class="level-indicator" id="level-indicator">Level 1/4</div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div class="screen active" id="start-screen">
+        <div class="game-title">BUREAUCRACY HERO</div>
+        <div class="game-subtitle">The BärGPT Protocol</div>
+        
+        <div class="intro-box">
+            <h3>🎯 Deine Mission</h3>
+            <p>Die Berliner Verwaltung braucht dich! BärGPT ist da, aber offline – und damit fast nutzlos. Deine Aufgabe: Überzeuge den CDO, die <strong>Online-Funktion</strong> freizuschalten.</p>
+            
+            <p>Aber Vorsicht: Der Datenschutzbeauftragte <strong>Herr D. S. Gvo</strong> steht dir im Weg. Du musst psychologische Barrieren erkennen, überzeugende Geschichten erzählen und mit Daten punkten.</p>
+            
+            <div class="level-preview">
+                <div class="level-preview-item">
+                    <strong>Level 1:</strong> Die Diagnose<br>
+                    <small>Erkenne die Biases</small>
+                </div>
+                <div class="level-preview-item">
+                    <strong>Level 2:</strong> Storytelling<br>
+                    <small>Baue die Heldenreise</small>
+                </div>
+                <div class="level-preview-item">
+                    <strong>Level 3:</strong> Data Lab<br>
+                    <small>Wähle die richtigen Daten</small>
+                </div>
+                <div class="level-preview-item">
+                    <strong>Level 4:</strong> Boss-Kampf<br>
+                    <small>Besiege den Datenschutz</small>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="startGame()">MISSION STARTEN</button>
+    </div>
+
+    <!-- Level 1: Die Diagnose -->
+    <div class="screen level-screen" id="level1-screen">
+        <div class="level-title">Level 1: Die Diagnose</div>
+        <div class="level-subtitle">Erkenne die psychologischen Barrieren in der E-Mail des Datenschutzes</div>
+        
+        <div class="office-scene">
+            <div class="email-display">
+                <div class="email-header">
+                    <div class="email-from">Von: Herr D. S. Gvo (Datenschutzbeauftragter)</div>
+                    <div>Betreff: RE: Anfrage Online-Funktion BärGPT</div>
+                </div>
+                <p>Sehr geehrte Kolleginnen und Kollegen,</p>
+                <p>ich muss diese Anfrage leider ablehnen. <span class="highlight-zone" data-bias="loss-aversion" id="zone1">Das Risiko eines Datenlecks ist untragbar – ein einziger Vorfall würde unseren Ruf unwiederbringlich zerstören.</span></p>
+                <p><span class="highlight-zone" data-bias="zero-risk" id="zone2">Wir können nur Lösungen akzeptieren, die ein 100% sicheres System garantieren.</span> Alles andere ist fahrlässig.</p>
+                <p><span class="highlight-zone" data-bias="omission" id="zone3">Es ist besser, beim aktuellen System zu bleiben, als durch voreilige Änderungen Probleme zu verursachen.</span></p>
+                <p>Mit freundlichen Grüßen,<br>D. S. Gvo</p>
+            </div>
+            
+            <p style="color: #f1c40f; margin-bottom: 15px; font-weight: bold;">🎯 Aufgabe: Klicke auf die markierten Stellen und wähle den passenden Bias!</p>
+            
+            <div class="bias-options" id="bias-options">
+                <div class="bias-chip" data-bias="loss-aversion">Verlust-Aversion</div>
+                <div class="bias-chip" data-bias="zero-risk">Zero-Risk Bias</div>
+                <div class="bias-chip" data-bias="omission">Omission Bias</div>
+                <div class="bias-chip" data-bias="confirmation">Confirmation Bias</div>
+                <div class="bias-chip" data-bias="anchoring">Anchoring Bias</div>
+            </div>
+        </div>
+        
+        <div id="level1-progress" style="margin-top: 20px; color: #f1c40f; font-family: 'Press Start 2P', cursive; font-size: 12px;">
+            Erkannt: <span id="bias-count">0</span>/3
+        </div>
+    </div>
+
+    <!-- Level 2: Storytelling -->
+    <div class="screen level-screen" id="level2-screen">
+        <div class="level-title">Level 2: Der Überzeugungs-Plan</div>
+        <div class="level-subtitle">Baue die perfekte Heldenreise für deine Präsentation</div>
+        
+        <div class="timeline-container">
+            <div class="timeline" id="timeline">
+                <div class="timeline-slot" data-position="1" data-correct="gewohnte-welt">1. Gewohnte Welt</div>
+                <div class="timeline-slot" data-position="2" data-correct="ruf">2. Der Ruf</div>
+                <div class="timeline-slot" data-position="3" data-correct="weigerung">3. Die Weigerung</div>
+                <div class="timeline-slot" data-position="4" data-correct="mentor">4. Der Mentor</div>
+                <div class="timeline-slot" data-position="5" data-correct="belohnung">5. Die Belohnung</div>
+            </div>
+            
+            <div class="story-blocks" id="story-blocks">
+                <div class="story-block" data-story="gewohnte-welt" draggable="true">
+                    📋 Sabine bearbeitet einen Bürgerantrag zur Solargesetz-Novelle
+                </div>
+                <div class="story-block" data-story="ruf" draggable="true">
+                    ❓ BärGPT kennt das neue Gesetz nicht (Daten-Cutoff)
+                </div>
+                <div class="story-block" data-story="weigerung" draggable="true">
+                    🚫 Datenschutz warnt, Sabine nutzt unsichere Workarounds
+                </div>
+                <div class="story-block" data-story="mentor" draggable="true">
+                    💡 CityLAB präsentiert den Datenschutz-Filter
+                </div>
+                <div class="story-block" data-story="belohnung" draggable="true">
+                    ✅ Sabine erhält Antwort mit Quellenangabe in Sekunden
+                </div>
+                <div class="story-block" data-story="wrong1" draggable="true">
+                    📊 Technische API-Spezifikation (Langweilig!)
+                </div>
+                <div class="story-block" data-story="wrong2" draggable="true">
+                    📈 Kostenaufstellung Q3/2024
+                </div>
+            </div>
+        </div>
+        
+        <div id="level2-progress" style="margin-top: 20px; color: #f1c40f; font-family: 'Press Start 2P', cursive; font-size: 12px;">
+            Platziert: <span id="story-count">0</span>/5
+        </div>
+    </div>
+
+    <!-- Level 3: Data Intelligence -->
+    <div class="screen level-screen" id="level3-screen">
+        <div class="level-title">Level 3: Das CityLAB</div>
+        <div class="level-subtitle">Wähle die überzeugendsten Datenvisualisierungen</div>
+        
+        <div class="lab-scene">
+            <div class="data-question" id="data-question">
+                <strong>Frage 1/3:</strong> Du willst zeigen, dass der Offline-Modus mehr Fehler produziert. Welche Darstellung überzeugt den CDO?
+            </div>
+            
+            <div class="data-options" id="data-options">
+                <!-- Options werden dynamisch geladen -->
+            </div>
+        </div>
+        
+        <div id="level3-progress" style="margin-top: 20px; color: #f1c40f; font-family: 'Press Start 2P', cursive; font-size: 12px;">
+            Richtige Wahlen: <span id="data-count">0</span>/3
+        </div>
+    </div>
+
+    <!-- Level 4: Boss Battle -->
+    <div class="screen level-screen" id="level4-screen">
+        <div class="level-title">Level 4: Das Meeting</div>
+        <div class="level-subtitle">Überzeuge den CDO im Duell gegen den Datenschutzbeauftragten</div>
+        
+        <div class="battle-arena">
+            <!-- Player Panel -->
+            <div class="character-panel">
+                <div class="character-avatar">🐻</div>
+                <div class="character-name">DU</div>
+                <div class="character-hp-bar">
+                    <div class="character-hp-fill hp-fill-player" id="player-hp" style="width: 100%;"></div>
+                </div>
+                <div style="font-size: 10px; margin-top: 5px; color: #27ae60;">Argumente: <span id="player-hp-text">100</span>%</div>
+            </div>
+            
+            <!-- Battle Center -->
+            <div class="battle-center">
+                <div class="battle-log" id="battle-log">
+                    Das Meeting beginnt. Der CDO wartet auf überzeugende Argumente...
+                </div>
+                
+                <div class="enemy-attack" id="enemy-attack" style="display: none;">
+                    <!-- Gegner-Angriff wird hier angezeigt -->
+                </div>
+                
+                <div style="font-weight: bold; margin-bottom: 15px; color: #333;">Wähle deine Karte:</div>
+                
+                <div class="card-hand" id="card-hand">
+                    <!-- Karten werden dynamisch geladen -->
+                </div>
+            </div>
+            
+            <!-- CDO Panel -->
+            <div class="character-panel cdo-panel">
+                <div class="character-avatar">👔</div>
+                <div class="character-name">CDO</div>
+                <div class="cdo-meter">
+                    <div class="cdo-meter-label">Überzeugungs-Meter</div>
+                    <div class="cdo-meter-bar">
+                        <div class="cdo-meter-fill" id="cdo-meter" style="width: 50%;"></div>
+                    </div>
+                </div>
+                <div style="font-size: 10px; margin-top: 5px; color: #f1c40f;"><span id="cdo-percent">50</span>% überzeugt</div>
+                
+                <div style="margin-top: 20px; border-top: 1px solid #555; padding-top: 15px;">
+                    <div class="character-avatar" style="font-size: 40px;">😤</div>
+                    <div class="character-name" style="color: #e74c3c;">HERR D.S. GVO</div>
+                    <div class="character-hp-bar">
+                        <div class="character-hp-fill hp-fill-enemy" id="enemy-hp" style="width: 100%;"></div>
+                    </div>
+                    <div style="font-size: 10px; margin-top: 5px; color: #e74c3c;">Skepsis: <span id="enemy-hp-text">100</span>%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Screen -->
+    <div class="screen" id="win-screen">
+        <div class="win-title">🎉 MISSION ERFOLGREICH!</div>
+        <div class="win-message">
+            <h3 style="color: #27ae60; margin-bottom: 15px;">Der CDO hat zugestimmt!</h3>
+            <p>Du hast es geschafft! Durch die Kombination aus:</p>
+            <ul style="text-align: left; margin: 15px 0; padding-left: 20px;">
+                <li><strong>Verständnis für Biases</strong> – Du hast die psychologischen Barrieren erkannt</li>
+                <li><strong>Emotionalem Storytelling</strong> – Die Heldenreise hat den CDO berührt</li>
+                <li><strong>Kluger Datenvisualisierung</strong> – Deine Daten haben überzeugt</li>
+                <li><strong>Taktischem Argumentieren</strong> – Du hast den Datenschutz entwaffnet</li>
+            </ul>
+            <p style="font-weight: bold; color: #27ae60;">Das Pilotprojekt für BärGPT Online ist genehmigt!</p>
+            <p style="font-size: 14px; color: #666; margin-top: 20px;">„Nicht durch reine Fakten, sondern durch Empathie und Strategie werden Entscheidungen gewonnen."</p>
+        </div>
+        <button class="btn btn-primary" onclick="location.reload()">NOCHMAL SPIELEN</button>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="feedback-modal" id="feedback-modal">
+        <div class="feedback-icon" id="feedback-icon">✅</div>
+        <div class="feedback-title" id="feedback-title">Richtig!</div>
+        <div class="feedback-text" id="feedback-text">Gut erkannt!</div>
+        <button class="btn btn-primary" onclick="closeFeedback()" style="font-size: 12px; padding: 12px 25px;">WEITER</button>
+    </div>
+</div>
+
+<script>
+// ==================== GAME STATE ====================
+let gameState = {
+    currentLevel: 0,
+    approval: 50,
+    level1: { biasesFound: 0, completed: false },
+    level2: { storiesPlaced: 0, completed: false },
+    level3: { correctChoices: 0, currentQuestion: 0, completed: false },
+    level4: { playerHP: 100, enemyHP: 100, cdoMeter: 50, round: 0, completed: false }
+};
+
+let selectedBias = null;
+let selectedStory = null;
+
+// ==================== DATA ====================
+const BIASES = {
+    'loss-aversion': {
+        name: 'Verlust-Aversion',
+        explanation: 'Potenzielle Verluste werden psychologisch stärker gewichtet als gleichwertige Gewinne. Der Datenschutzbeauftragte fokussiert sich auf das Worst-Case-Szenario.'
+    },
+    'zero-risk': {
+        name: 'Zero-Risk Bias',
+        explanation: 'Der Wunsch, Risiken vollständig zu eliminieren (0%), anstatt sie zu managen. 100% Sicherheit ist in der IT-Welt unrealistisch.'
+    },
+    'omission': {
+        name: 'Omission Bias',
+        explanation: 'Das Risiko einer Handlung wird höher bewertet als das Risiko des Nicht-Handelns – obwohl Stillstand (Schatten-IT) langfristig schädlicher sein kann.'
+    }
+};
+
+const DATA_QUESTIONS = [
+    {
+        question: 'Du willst zeigen, dass der Offline-Modus mehr Fehler produziert. Welche Darstellung überzeugt den CDO?',
+        options: [
+            { id: 'table', icon: '📊', label: 'Komplexe Datentabelle mit allen Rohdaten', correct: false },
+            { id: 'bar', icon: '📈', label: 'Balkendiagramm: "Halluzinationen Offline vs. Online"', correct: true }
+        ],
+        feedback: {
+            correct: 'Perfekt! Ein klares Balkendiagramm kommuniziert die Kernbotschaft sofort. Daten müssen Geschichten stützen, nicht verwirren.',
+            wrong: 'Zu komplex! Der CDO hat keine Zeit, Rohdaten zu analysieren. Visualisiere die Kernbotschaft!'
+        }
+    },
+    {
+        question: 'Wie präsentierst du die Zeitersparnis durch BärGPT Online am überzeugendsten?',
+        options: [
+            { id: 'text', icon: '📝', label: 'Langer Fließtext mit allen Details', correct: false },
+            { id: 'compare', icon: '⏱️', label: 'Vergleich: "15 Min. manuell vs. 3 Min. KI-gestützt"', correct: true }
+        ],
+        feedback: {
+            correct: 'Genau! Ein direkter Vergleich macht den Nutzen sofort greifbar. Weniger ist mehr!',
+            wrong: 'Zu viel Text! Entscheider scannen, sie lesen nicht. Nutze visuelle Vergleiche!'
+        }
+    },
+    {
+        question: 'Der CDO fragt nach dem Risiko von Schatten-IT. Wie antwortest du?',
+        options: [
+            { id: 'risk', icon: '⚠️', label: 'Risiko-Matrix: "Schatten-IT = Hohe Wahrscheinlichkeit + Hoher Schaden"', correct: true },
+            { id: 'ignore', icon: '🤷', label: 'Das Thema herunterspielen', correct: false }
+        ],
+        feedback: {
+            correct: 'Richtig! Du nutzt Pre-Suasion: Der Stillstand IST das Risiko. Das reframt die Diskussion.',
+            wrong: 'Gefährlich! Ignorierte Risiken kommen zurück. Nutze sie als Argument FÜR die Änderung!'
+        }
+    }
+];
+
+const ENEMY_ATTACKS = [
+    { name: 'DSGVO-Panik', text: '😤 "Die DSGVO verbietet das! Wir riskieren Millionen-Strafen!"', damage: 15 },
+    { name: 'Presse-Angst', text: '😤 "Stellen Sie sich die Schlagzeilen vor: Berlin leakt Bürgerdaten!"', damage: 20 },
+    { name: 'Status-Quo', text: '😤 "Das haben wir noch nie so gemacht. Warum jetzt ändern?"', damage: 10 },
+    { name: 'Verantwortungs-Ping-Pong', text: '😤 "Wer übernimmt die Verantwortung, wenn etwas schiefgeht?"', damage: 15 }
+];
+
+const PLAYER_CARDS = [
+    { id: 'premortem', name: 'Pre-Mortem Analyse', icon: '🔮', effect: '+25 Überzeugung', power: 25, description: 'Wir simulieren Fehler vorher und bauen Filter ein.' },
+    { id: 'fomo', name: 'FOMO-Karte', icon: '🏃', effect: '+20 Überzeugung', power: 20, description: 'Hamburg macht es schon. Wollen wir zurückbleiben?' },
+    { id: 'pilot', name: 'Pilot-Plan', icon: '🧪', effect: '+15 Überzeugung', power: 15, description: 'Begrenzter Rollout als Reallabor. Geringes Risiko.' },
+    { id: 'sabine', name: 'Sabines Geschichte', icon: '👩‍💼', effect: '+20 Überzeugung', power: 20, description: 'Eine echte Mitarbeiterin erzählt von ihrer Frustration.' },
+    { id: 'schatten', name: 'Schatten-IT Warnung', icon: '👻', effect: '+15 Überzeugung', power: 15, description: 'Mitarbeiter nutzen bereits private ChatGPT-Accounts!' },
+    { id: 'technik', name: 'Technik-Jargon', icon: '🔧', effect: 'Wirkungslos', power: 0, description: 'API-Endpoints, TLS 1.3, OAuth 2.0...' }
+];
+
+// ==================== INITIALIZATION ====================
+function startGame() {
+    document.getElementById('start-screen').classList.remove('active');
+    document.getElementById('hud').style.display = 'flex';
+    startLevel1();
+}
+
+function updateHUD() {
+    document.getElementById('approval-fill').style.width = gameState.approval + '%';
+    document.getElementById('level-indicator').textContent = `Level ${gameState.currentLevel}/4`;
+}
+
+// ==================== LEVEL 1: BIAS SCANNER ====================
+function startLevel1() {
+    gameState.currentLevel = 1;
+    updateHUD();
+    document.getElementById('level1-screen').classList.add('active');
+    
+    // Setup click handlers for highlight zones
+    document.querySelectorAll('.highlight-zone').forEach(zone => {
+        zone.addEventListener('click', () => selectZone(zone));
+    });
+    
+    // Setup click handlers for bias chips
+    document.querySelectorAll('.bias-chip').forEach(chip => {
+        chip.addEventListener('click', () => selectBias(chip));
+    });
+}
+
+function selectZone(zone) {
+    if (zone.classList.contains('correct')) return;
+    
+    document.querySelectorAll('.highlight-zone').forEach(z => z.style.outline = 'none');
+    zone.style.outline = '3px solid #e94560';
+    
+    if (selectedBias) {
+        checkBiasMatch(zone, selectedBias);
+    }
+}
+
+function selectBias(chip) {
+    if (chip.classList.contains('used')) return;
+    
+    document.querySelectorAll('.bias-chip').forEach(c => c.style.outline = 'none');
+    chip.style.outline = '3px solid #f1c40f';
+    selectedBias = chip.dataset.bias;
+    
+    const selectedZone = document.querySelector('.highlight-zone[style*="outline"]');
+    if (selectedZone && !selectedZone.classList.contains('correct')) {
+        checkBiasMatch(selectedZone, selectedBias);
+    }
+}
+
+function checkBiasMatch(zone, bias) {
+    const correctBias = zone.dataset.bias;
+    
+    if (bias === correctBias) {
+        zone.classList.add('correct');
+        zone.style.outline = 'none';
+        
+        const chip = document.querySelector(`.bias-chip[data-bias="${bias}"]`);
+        chip.classList.add('used');
+        
+        gameState.level1.biasesFound++;
+        document.getElementById('bias-count').textContent = gameState.level1.biasesFound;
+        
+        gameState.approval = Math.min(100, gameState.approval + 5);
+        updateHUD();
+        
+        showFeedback(true, BIASES[bias].name + ' erkannt!', BIASES[bias].explanation);
+        
+        if (gameState.level1.biasesFound >= 3) {
+            gameState.level1.completed = true;
+        }
+    } else {
+        zone.classList.add('incorrect');
+        setTimeout(() => zone.classList.remove('incorrect'), 500);
+        
+        gameState.approval = Math.max(0, gameState.approval - 5);
+        updateHUD();
+        
+        showFeedback(false, 'Nicht ganz...', 'Lies den Text nochmal genau. Welcher psychologische Effekt steckt dahinter?');
+    }
+    
+    selectedBias = null;
+    document.querySelectorAll('.bias-chip').forEach(c => c.style.outline = 'none');
+}
+
+// ==================== LEVEL 2: NARRATIVE PUZZLE ====================
+function startLevel2() {
+    gameState.currentLevel = 2;
+    updateHUD();
+    document.getElementById('level1-screen').classList.remove('active');
+    document.getElementById('level2-screen').classList.add('active');
+    
+    // Setup drag and drop
+    const blocks = document.querySelectorAll('.story-block');
+    const slots = document.querySelectorAll('.timeline-slot');
+    
+    blocks.forEach(block => {
+        block.addEventListener('dragstart', handleDragStart);
+        block.addEventListener('dragend', handleDragEnd);
+        block.addEventListener('click', () => selectStoryBlock(block));
+    });
+    
+    slots.forEach(slot => {
+        slot.addEventListener('dragover', handleDragOver);
+        slot.addEventListener('drop', handleDrop);
+        slot.addEventListener('click', () => placeStoryBlock(slot));
+    });
+}
+
+let draggedBlock = null;
+
+function handleDragStart(e) {
+    draggedBlock = e.target;
+    e.target.classList.add('dragging');
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const slot = e.target.closest('.timeline-slot');
+    if (slot && draggedBlock) {
+        tryPlaceBlock(slot, draggedBlock);
+    }
+}
+
+function selectStoryBlock(block) {
+    if (block.classList.contains('placed')) return;
+    
+    document.querySelectorAll('.story-block').forEach(b => b.style.outline = 'none');
+    block.style.outline = '3px solid #f1c40f';
+    selectedStory = block;
+}
+
+function placeStoryBlock(slot) {
+    if (selectedStory && !slot.classList.contains('filled')) {
+        tryPlaceBlock(slot, selectedStory);
+    }
+}
+
+function tryPlaceBlock(slot, block) {
+    if (slot.classList.contains('filled') || block.classList.contains('placed')) return;
+    
+    const correctStory = slot.dataset.correct;
+    const blockStory = block.dataset.story;
+    
+    if (blockStory === correctStory) {
+        slot.classList.add('filled');
+        slot.innerHTML = block.innerHTML;
+        block.classList.add('placed');
+        block.style.outline = 'none';
+        
+        gameState.level2.storiesPlaced++;
+        document.getElementById('story-count').textContent = gameState.level2.storiesPlaced;
+        
+        gameState.approval = Math.min(100, gameState.approval + 5);
+        updateHUD();
+        
+        showFeedback(true, 'Perfekt platziert!', 'Die Heldenreise nimmt Form an. Emotionale Bindung wird aufgebaut!');
+        
+        if (gameState.level2.storiesPlaced >= 5) {
+            gameState.level2.completed = true;
+        }
+    } else {
+        slot.classList.add('wrong');
+        setTimeout(() => slot.classList.remove('wrong'), 500);
+        
+        gameState.approval = Math.max(0, gameState.approval - 5);
+        updateHUD();
+        
+        const isWrongBlock = blockStory.startsWith('wrong');
+        if (isWrongBlock) {
+            showFeedback(false, 'Langweilig!', 'Der CDO schläft fast ein. Technische Details gehören nicht an den Anfang einer Geschichte!');
+        } else {
+            showFeedback(false, 'Falsche Reihenfolge!', 'Die Heldenreise hat eine bestimmte Struktur. Überlege, was zuerst kommt.');
+        }
+    }
+    
+    selectedStory = null;
+    draggedBlock = null;
+}
+
+// ==================== LEVEL 3: DATA INTELLIGENCE ====================
+function startLevel3() {
+    gameState.currentLevel = 3;
+    gameState.level3.currentQuestion = 0;
+    updateHUD();
+    document.getElementById('level2-screen').classList.remove('active');
+    document.getElementById('level3-screen').classList.add('active');
+    
+    showDataQuestion();
+}
+
+function showDataQuestion() {
+    const q = DATA_QUESTIONS[gameState.level3.currentQuestion];
+    document.getElementById('data-question').innerHTML = `<strong>Frage ${gameState.level3.currentQuestion + 1}/3:</strong> ${q.question}`;
+    
+    const optionsDiv = document.getElementById('data-options');
+    optionsDiv.innerHTML = '';
+    
+    q.options.forEach(opt => {
+        const optDiv = document.createElement('div');
+        optDiv.className = 'data-option';
+        optDiv.innerHTML = `
+            <div class="chart-preview">${opt.icon}</div>
+            <div class="data-option-label">${opt.label}</div>
+        `;
+        optDiv.addEventListener('click', () => selectDataOption(opt, optDiv));
+        optionsDiv.appendChild(optDiv);
+    });
+}
+
+function selectDataOption(option, element) {
+    const q = DATA_QUESTIONS[gameState.level3.currentQuestion];
+    
+    document.querySelectorAll('.data-option').forEach(o => {
+        o.style.pointerEvents = 'none';
+    });
+    
+    if (option.correct) {
+        element.classList.add('selected');
+        gameState.level3.correctChoices++;
+        document.getElementById('data-count').textContent = gameState.level3.correctChoices;
+        
+        gameState.approval = Math.min(100, gameState.approval + 10);
+        updateHUD();
+        
+        showFeedback(true, 'Data Clarity Bonus!', q.feedback.correct);
+    } else {
+        element.classList.add('wrong');
+        gameState.approval = Math.max(0, gameState.approval - 5);
+        updateHUD();
+        
+        showFeedback(false, 'Nicht optimal...', q.feedback.wrong);
+    }
+    
+    gameState.level3.currentQuestion++;
+    
+    if (gameState.level3.currentQuestion >= DATA_QUESTIONS.length) {
+        gameState.level3.completed = true;
+    }
+}
+
+function nextDataQuestion() {
+    if (gameState.level3.currentQuestion < DATA_QUESTIONS.length) {
+        showDataQuestion();
+    }
+}
+
+// ==================== LEVEL 4: BOSS BATTLE ====================
+function startLevel4() {
+    gameState.currentLevel = 4;
+    gameState.level4 = { playerHP: 100, enemyHP: 100, cdoMeter: gameState.approval, round: 0, completed: false };
+    updateHUD();
+    document.getElementById('level3-screen').classList.remove('active');
+    document.getElementById('level4-screen').classList.add('active');
+    
+    updateBattleUI();
+    showCards();
+    
+    // Start with enemy attack after a short delay
+    setTimeout(enemyTurn, 1000);
+}
+
+function updateBattleUI() {
+    document.getElementById('player-hp').style.width = gameState.level4.playerHP + '%';
+    document.getElementById('player-hp-text').textContent = gameState.level4.playerHP;
+    document.getElementById('enemy-hp').style.width = gameState.level4.enemyHP + '%';
+    document.getElementById('enemy-hp-text').textContent = gameState.level4.enemyHP;
+    document.getElementById('cdo-meter').style.width = gameState.level4.cdoMeter + '%';
+    document.getElementById('cdo-percent').textContent = gameState.level4.cdoMeter;
+}
+
+function showCards() {
+    const handDiv = document.getElementById('card-hand');
+    handDiv.innerHTML = '';
+    
+    // Shuffle and pick 4 cards
+    const shuffled = [...PLAYER_CARDS].sort(() => Math.random() - 0.5);
+    const hand = shuffled.slice(0, 4);
+    
+    hand.forEach(card => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'battle-card';
+        cardDiv.innerHTML = `
+            <div class="card-icon">${card.icon}</div>
+            <div class="card-name">${card.name}</div>
+            <div class="card-effect">${card.effect}</div>
+        `;
+        cardDiv.addEventListener('click', () => playCard(card, cardDiv));
+        handDiv.appendChild(cardDiv);
+    });
+}
+
+function enemyTurn() {
+    const attack = ENEMY_ATTACKS[gameState.level4.round % ENEMY_ATTACKS.length];
+    
+    document.getElementById('enemy-attack').style.display = 'block';
+    document.getElementById('enemy-attack').innerHTML = `<strong>${attack.name}:</strong><br>${attack.text}`;
+    
+    gameState.level4.cdoMeter = Math.max(0, gameState.level4.cdoMeter - attack.damage);
+    updateBattleUI();
+    
+    addToBattleLog(`Herr D.S. Gvo spielt "${attack.name}" (-${attack.damage}% Überzeugung)`);
+    
+    // Enable cards
+    document.querySelectorAll('.battle-card').forEach(c => c.classList.remove('disabled'));
+}
+
+function playCard(card, element) {
+    if (element.classList.contains('disabled')) return;
+    
+    // Disable all cards
+    document.querySelectorAll('.battle-card').forEach(c => c.classList.add('disabled'));
+    
+    document.getElementById('enemy-attack').style.display = 'none';
+    
+    if (card.power === 0) {
+        // Technik-Jargon is useless
+        addToBattleLog(`Du spielst "${card.name}" - Der CDO gähnt. Wirkungslos!`);
+        gameState.level4.playerHP = Math.max(0, gameState.level4.playerHP - 10);
+    } else {
+        addToBattleLog(`Du spielst "${card.name}": "${card.description}" (+${card.power}% Überzeugung)`);
+        gameState.level4.cdoMeter = Math.min(100, gameState.level4.cdoMeter + card.power);
+        gameState.level4.enemyHP = Math.max(0, gameState.level4.enemyHP - card.power);
+    }
+    
+    updateBattleUI();
+    gameState.level4.round++;
+    
+    // Check win/lose conditions
+    if (gameState.level4.cdoMeter >= 100 || gameState.level4.enemyHP <= 0) {
+        setTimeout(() => {
+            gameState.level4.completed = true;
+            gameState.approval = gameState.level4.cdoMeter;
+            showWinScreen();
+        }, 1000);
+    } else if (gameState.level4.cdoMeter <= 0 || gameState.level4.playerHP <= 0) {
+        setTimeout(() => {
+            showFeedback(false, 'Meeting gescheitert!', 'Der CDO hat abgelehnt. Versuche es nochmal!');
+            // Reset level 4
+            gameState.level4 = { playerHP: 100, enemyHP: 100, cdoMeter: 50, round: 0, completed: false };
+            updateBattleUI();
+            showCards();
+            setTimeout(enemyTurn, 1500);
+        }, 1000);
+    } else {
+        // Continue battle
+        setTimeout(() => {
+            showCards();
+            setTimeout(enemyTurn, 500);
+        }, 1000);
+    }
+}
+
+function addToBattleLog(text) {
+    const log = document.getElementById('battle-log');
+    log.innerHTML = text;
+}
+
+// ==================== WIN SCREEN ====================
+function showWinScreen() {
+    document.getElementById('level4-screen').classList.remove('active');
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('win-screen').classList.add('active');
+}
+
+// ==================== FEEDBACK MODAL ====================
+function showFeedback(success, title, text) {
+    const modal = document.getElementById('feedback-modal');
+    modal.className = 'feedback-modal active ' + (success ? 'success' : 'error');
+    document.getElementById('feedback-icon').textContent = success ? '✅' : '❌';
+    document.getElementById('feedback-title').textContent = title;
+    document.getElementById('feedback-title').style.color = success ? '#27ae60' : '#e74c3c';
+    document.getElementById('feedback-text').textContent = text;
+}
+
+function closeFeedback() {
+    document.getElementById('feedback-modal').classList.remove('active');
+    
+    // Check for level completion and advance
+    if (gameState.level1.completed && gameState.currentLevel === 1) {
+        startLevel2();
+    } else if (gameState.level2.completed && gameState.currentLevel === 2) {
+        startLevel3();
+    } else if (gameState.level3.completed && gameState.currentLevel === 3) {
+        startLevel4();
+    } else if (gameState.currentLevel === 3 && gameState.level3.currentQuestion < DATA_QUESTIONS.length) {
+        nextDataQuestion();
+    }
+}
+
+// ==================== KEYBOARD SUPPORT ====================
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'Enter') {
+        const modal = document.getElementById('feedback-modal');
+        if (modal.classList.contains('active')) {
+            closeFeedback();
+        }
+    }
+});
+</script>
+
+</body>
+</html>
