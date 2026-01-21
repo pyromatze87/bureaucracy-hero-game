@@ -1,46 +1,36 @@
-# Bureaucracy Hero - Erweiterungen
+# Bureaucracy Hero - Bugfixes und Erweiterungen v2.1
 
-## Neue Level
-- [ ] Level 2: Personalrat-Telefonat (Pokémon-Style)
-  - Frau Müller (Vorsitzende Hauptpersonalrat)
-  - Angriffe: Mitbestimmungs-Paragraf, Überlastungs-Klage, etc.
-  - Spieler-Konter mit Argumenten
-- [ ] Level 3: Beschäftigten-Bedarfsabfrage
-  - Analyse von Rückläufern
-  - Muster erkennen in den Antworten
-  - Statistiken interpretieren
+## Zu erledigen
 
-## Randomisierung
-- [ ] Bias-Chips zufällig sortieren
-- [ ] Story-Blöcke zufällig sortieren
-- [ ] Daten-Optionen zufällig sortieren
-- [ ] Karten im Boss-Kampf zufällig sortieren
-- [ ] Neue Level-Antworten zufällig sortieren
+### Kritische Bugfixes
+- [ ] Level 1: Manueller "Weiter zum nächsten Level"-Button nach 3. Bias statt Auto-Wechsel
+- [ ] Level 2: Lebensanzeige-Overflow beheben (sprengt das Fenster)
+- [ ] Fax-Easter-Egg: Lesbare Buttons (dunkle Schrift auf hellem Button)
 
-## Easter Eggs
-- [ ] Kaffee-Boost: Versteckte Kaffeetasse = +10% Energie
-- [ ] Fax-Maschine-Gag: "Möchten Sie das per Fax senden?"
+### Geschlechter-Korrekturen
+- [ ] CDO ist eine Frau → "Zustimmung der CDO" im HUD
+- [ ] Datenschutzbeauftragte Berlin ist eine Frau → "Frau D. S. Gvo"
 
-## Sounds
-- [ ] Sound-System implementieren
-- [ ] Klick-Sound
-- [ ] Richtige Antwort-Sound
-- [ ] Falsche Antwort-Sound
-- [ ] Level-Up-Sound
-- [ ] Boss-Kampf-Musik
-- [ ] Victory-Sound
+### Balken-Anpassungen
+- [ ] Zustimmungsbalken startet im orangenen Bereich (~30%) statt mittig
 
-## Wissenschaftliche Erklärungen
-- [ ] Verlust-Aversion detaillierter (Kahneman & Tversky)
-- [ ] Zero-Risk Bias mit Studien
-- [ ] Omission Bias mit Beispielen
-- [ ] Neue Biases für Personalrat-Level
-- [ ] Quellenangaben hinzufügen
+### Visuelle Verbesserungen
+- [ ] Pokémon-Style Charakterbilder generieren (Spieler, Frau Müller, Frau D.S. Gvo, CDO)
+- [ ] Blitzanimation bei Spieler-Angriffen
 
-## Neue Level-Struktur
-1. Die Diagnose (Bias-Scanner E-Mail) - existiert
-2. Der Anruf (Personalrat Pokémon-Style) - NEU
-3. Die Stimme der Basis (Beschäftigten-Analyse) - NEU
-4. Der Überzeugungs-Plan (Narrative Puzzle) - existiert
-5. Data Intelligence (A/B Testing) - existiert
-6. Der Boss-Kampf (Kartenspiel) - existiert
+### Boss-Fight Erweiterung
+- [ ] Mehr Runden/Angriffe erforderlich
+- [ ] Gegner können Spieler-HP durch Gegenargumente senken
+- [ ] Spieler kann kontern, nimmt aber trotzdem Schaden
+- [ ] HP-Balken für Spieler hinzufügen
+- [ ] Spannender Verlauf bis zum Schluss
+
+### Abspann
+- [ ] Umfangreicherer Abspann mit Credits, Learnings, etc.
+
+## Erledigt
+- [x] Neue Level (Personalrat, Beschäftigte) implementiert
+- [x] Easter Eggs (Kaffee, Fax) eingebaut
+- [x] Soundeffekte hinzugefügt
+- [x] Antwort-Randomisierung implementiert
+- [x] Wissenschaftliche Erklärungen detailliert
