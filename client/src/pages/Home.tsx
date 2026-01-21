@@ -387,10 +387,12 @@ function HUD({ approval, level, energy, coffeeFound }: { approval: number; level
             transition={{ duration: 0.5 }}
           />
         </div>
-        {coffeeFound && (
-          <div className="text-[10px] text-green-400 mt-1">☕ Kaffee-Boost aktiv!</div>
-        )}
       </div>
+      {coffeeFound && (
+        <div className="absolute top-20 left-4 bg-black/80 border border-green-500 rounded px-2 py-1 text-[10px] text-green-400 z-50">
+          ☕ Kaffee-Boost aktiv!
+        </div>
+      )}
       <div className="flex gap-2">
         <div className="bg-black/80 border-2 border-green-500 rounded-lg px-3 py-2 pointer-events-auto">
           <div className="font-pixel text-[10px] text-green-400">⚡ {energy}%</div>
@@ -730,7 +732,7 @@ function Level1({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
+      className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 pb-16 bg-[#141428]/98 overflow-y-auto"
     >
       <CoffeeEasterEgg onFind={onCoffeeFind} />
       
@@ -813,7 +815,7 @@ function Level1({
         </div>
       </div>
 
-      <div className="mt-5 font-pixel text-sm text-accent">
+      <div className="mt-5 mb-8 font-pixel text-sm text-accent">
         Erkannt: <span className="text-white">{biasesFound}</span>/3
       </div>
 
@@ -1216,11 +1218,37 @@ function Level4({
       playCorrectSound();
       setPlacedStories(prev => new Map(Array.from(prev.entries()).concat([[slotId, selectedBlock]])));
       setUsedBlocks(prev => new Set(Array.from(prev).concat(selectedBlock)));
+      
+      // Individuelle Feedback-Texte für jeden Heldenreise-Schritt
+      const feedbackTexts: Record<string, { title: string; text: string }> = {
+        ordinary: {
+          title: "Die Gewöhnliche Welt!",
+          text: "Perfekt! Du beginnst mit dem Alltag der Heldin. Campbell (1949) nennt dies die 'Ordinary World' – der Zuhörer muss zuerst verstehen, wie das Leben VOR der Veränderung aussah. Sabines tägliche Arbeit mit Bürgeranträgen schafft Identifikation."
+        },
+        call: {
+          title: "Der Ruf zum Abenteuer!",
+          text: "Genau richtig! Das Problem wird sichtbar: BärGPT ist offline und kann nicht helfen. Dies ist der 'Call to Adventure' (Campbell, 1949) – ein Ereignis, das die Heldin aus ihrer Komfortzone reißt und Veränderung fordert."
+        },
+        refusal: {
+          title: "Die Weigerung!",
+          text: "Exzellent! Sabines Zögern ist menschlich und macht die Geschichte glaubwürdig. Die 'Refusal of the Call' zeigt innere Konflikte und Bedenken – genau wie bei den echten Stakeholdern. Das schafft Empathie!"
+        },
+        mentor: {
+          title: "Der Mentor erscheint!",
+          text: "Sehr gut! Der hilfreiche Kollege ist der klassische Mentor (wie Gandalf oder Obi-Wan). Er gibt der Heldin das Werkzeug (die Online-Funktion) und das Wissen, um die Herausforderung zu meistern. Mentoren machen Veränderung möglich!"
+        },
+        reward: {
+          title: "Die Belohnung!",
+          text: "Perfekter Abschluss! Die 'Reward' zeigt den konkreten Nutzen: 10 statt 47 Minuten. Das ist 'Narrative Transportation' (Green & Brock, 2000) in Aktion – die CDO erlebt den Erfolg emotional mit und ist überzeugt!"
+        }
+      };
+      
+      const fb = feedbackTexts[block.story] || { title: "Gut gemacht!", text: "Die Geschichte nimmt Form an." };
       setFeedback({
         show: true,
         success: true,
-        title: "Perfekt platziert!",
-        text: "Die Heldenreise (Campbell, 1949) ist ein universelles Narrativ-Muster. Emotionale Geschichten aktivieren das 'Narrative Transportation' (Green & Brock, 2000) – der Zuhörer wird Teil der Geschichte und ist offener für die Botschaft."
+        title: fb.title,
+        text: fb.text
       });
       onStoryPlaced();
     } else {
@@ -1240,7 +1268,8 @@ function Level4({
 
   const handleFeedbackClose = () => {
     setFeedback({ ...feedback, show: false });
-    if (storiesPlaced + 1 >= 5 && !showLevelComplete) {
+    // Prüfe ob alle 5 Slots gefüllt sind (placedStories.size wird nach dem Platzieren aktualisiert)
+    if (placedStories.size >= 5 && !showLevelComplete) {
       playLevelUpSound();
       setShowLevelComplete(true);
     }
@@ -1855,7 +1884,8 @@ export default function Home() {
   const handleBiasFound = useCallback(() => {
     setGameState(prev => ({
       ...prev,
-      approval: Math.min(100, prev.approval + 5),
+      // CDO-Zustimmung darf vor dem Boss-Fight maximal 80% erreichen
+      approval: Math.min(80, prev.approval + 5),
       level1: { ...prev.level1, biasesFound: prev.level1.biasesFound + 1 }
     }));
     return true;
@@ -1872,7 +1902,8 @@ export default function Home() {
   const handlePersonalratCounter = useCallback((power: number, damage: number) => {
     setGameState(prev => ({
       ...prev,
-      approval: Math.min(100, prev.approval + Math.floor(power / 2)),
+      // CDO-Zustimmung darf vor dem Boss-Fight maximal 80% erreichen
+      approval: Math.min(80, prev.approval + Math.floor(power / 2)),
       level2: { 
         ...prev.level2, 
         round: prev.level2.round + 1,
@@ -1893,7 +1924,8 @@ export default function Home() {
   const handleSurveyAnswer = useCallback((correct: boolean) => {
     setGameState(prev => ({
       ...prev,
-      approval: correct ? Math.min(100, prev.approval + 8) : Math.max(0, prev.approval - 3),
+      // CDO-Zustimmung darf vor dem Boss-Fight maximal 80% erreichen
+      approval: correct ? Math.min(80, prev.approval + 8) : Math.max(0, prev.approval - 3),
       level3: {
         ...prev.level3,
         currentQuestion: prev.level3.currentQuestion + 1,
@@ -1913,7 +1945,8 @@ export default function Home() {
   const handleStoryPlaced = useCallback(() => {
     setGameState(prev => ({
       ...prev,
-      approval: Math.min(100, prev.approval + 5),
+      // CDO-Zustimmung darf vor dem Boss-Fight maximal 80% erreichen
+      approval: Math.min(80, prev.approval + 5),
       level4: { ...prev.level4, storiesPlaced: prev.level4.storiesPlaced + 1 }
     }));
     return true;
@@ -1930,7 +1963,8 @@ export default function Home() {
   const handleDataAnswer = useCallback((correct: boolean) => {
     setGameState(prev => ({
       ...prev,
-      approval: correct ? Math.min(100, prev.approval + 10) : Math.max(0, prev.approval - 5),
+      // CDO-Zustimmung darf vor dem Boss-Fight maximal 80% erreichen
+      approval: correct ? Math.min(80, prev.approval + 10) : Math.max(0, prev.approval - 5),
       level5: {
         ...prev.level5,
         currentQuestion: prev.level5.currentQuestion + 1,
