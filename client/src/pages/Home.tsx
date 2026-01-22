@@ -76,83 +76,6 @@ const playAttackSound = () => {
 // LocalStorage Keys
 const STORAGE_KEY = 'bureaucracy-hero-save';
 
-// ==================== DIFFICULTY SYSTEM ====================
-type Difficulty = 'beginner' | 'standard' | 'expert';
-
-interface DifficultyConfig {
-  name: string;
-  description: string;
-  emoji: string;
-  timeLimits: {
-    level1: number; // Sekunden pro Bias
-    level2: number; // Sekunden pro Runde
-    level3: number; // Sekunden pro Frage
-    level4: number; // Sekunden pro Story-Element
-    level5: number; // Sekunden pro Frage
-    level6: number; // Sekunden pro Runde
-  };
-  hints: boolean;
-  damageMultiplier: number;
-  approvalBonus: number;
-}
-
-const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
-  beginner: {
-    name: 'Anfänger',
-    description: 'Kein Zeitlimit, Hinweise aktiviert, weniger Schaden',
-    emoji: '🌱',
-    timeLimits: {
-      level1: 0, // 0 = kein Zeitlimit
-      level2: 0,
-      level3: 0,
-      level4: 0,
-      level5: 0,
-      level6: 0
-    },
-    hints: true,
-    damageMultiplier: 0.5,
-    approvalBonus: 1.2
-  },
-  standard: {
-    name: 'Standard',
-    description: 'Moderate Zeitlimits, ausgewogene Herausforderung',
-    emoji: '⚖️',
-    timeLimits: {
-      level1: 45,
-      level2: 30,
-      level3: 40,
-      level4: 35,
-      level5: 40,
-      level6: 25
-    },
-    hints: false,
-    damageMultiplier: 1.0,
-    approvalBonus: 1.0
-  },
-  expert: {
-    name: 'Experte',
-    description: 'Knappe Zeitlimits, erhöhter Schaden, keine Gnade',
-    emoji: '🔥',
-    timeLimits: {
-      level1: 25,
-      level2: 15,
-      level3: 20,
-      level4: 20,
-      level5: 20,
-      level6: 12
-    },
-    hints: false,
-    damageMultiplier: 1.5,
-    approvalBonus: 0.8
-  }
-};
-
-// Sound für Timeout
-const playTimeoutSound = () => {
-  createSound(150, 0.5, 'sawtooth')();
-  setTimeout(() => createSound(100, 0.3, 'sawtooth')(), 200);
-};
-
 // Speichern des Spielstands
 const saveGameProgress = (screen: string, gameState: GameState) => {
   try {
@@ -427,7 +350,6 @@ interface GameState {
   energy: number;
   coffeeFound: boolean;
   faxTriggered: boolean;
-  difficulty: Difficulty;
   level1: { biasesFound: number; completed: boolean };
   level2: { round: number; personalratHP: number; playerHP: number; completed: boolean };
   level3: { currentQuestion: number; correctChoices: number; completed: boolean };
@@ -515,8 +437,8 @@ function FaxModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
   );
 }
 
-// HUD Component - Mit Difficulty-Badge
-function HUD({ approval, level, energy, coffeeFound, difficulty }: { approval: number; level: number; energy: number; coffeeFound: boolean; difficulty: Difficulty }) {
+// HUD Component - FIXED: CDO ist weiblich, Balken startet bei 30%
+function HUD({ approval, level, energy, coffeeFound }: { approval: number; level: number; energy: number; coffeeFound: boolean }) {
   return (
     <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-50 pointer-events-none">
       <div className="bg-black/80 border-2 border-primary rounded-lg p-3 pointer-events-auto neon-glow-pink">
@@ -539,8 +461,7 @@ function HUD({ approval, level, energy, coffeeFound, difficulty }: { approval: n
           ☕ Kaffee-Boost aktiv!
         </div>
       )}
-      <div className="flex gap-2 items-center">
-        <DifficultyBadge difficulty={difficulty} />
+      <div className="flex gap-2">
         <div className="bg-black/80 border-2 border-green-500 rounded-lg px-3 py-2 pointer-events-auto">
           <div className="font-pixel text-[10px] text-green-400">⚡ {energy}%</div>
         </div>
@@ -705,118 +626,8 @@ function LightningEffect({ show }: { show: boolean }) {
   );
 }
 
-// Timer Component für Zeitlimits
-function GameTimer({ 
-  timeLimit, 
-  onTimeout, 
-  isPaused = false,
-  label = "Zeit"
-}: { 
-  timeLimit: number; 
-  onTimeout: () => void; 
-  isPaused?: boolean;
-  label?: string;
-}) {
-  const [timeLeft, setTimeLeft] = useState(timeLimit);
-  const [isWarning, setIsWarning] = useState(false);
-
-  useEffect(() => {
-    setTimeLeft(timeLimit);
-    setIsWarning(false);
-  }, [timeLimit]);
-
-  useEffect(() => {
-    if (timeLimit === 0 || isPaused) return;
-
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          playTimeoutSound();
-          onTimeout();
-          return 0;
-        }
-        if (prev <= 6 && prev > 5) {
-          setIsWarning(true);
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timeLimit, onTimeout, isPaused]);
-
-  if (timeLimit === 0) return null;
-
-  const percentage = (timeLeft / timeLimit) * 100;
-  const isLow = percentage < 30;
-  const isCritical = percentage < 15;
-
-  return (
-    <motion.div 
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
-        isCritical ? 'bg-red-900/80 border-red-500' :
-        isLow ? 'bg-orange-900/80 border-orange-500' :
-        'bg-gray-900/80 border-gray-600'
-      }`}
-      animate={isWarning ? { scale: [1, 1.05, 1] } : {}}
-      transition={{ repeat: isWarning ? Infinity : 0, duration: 0.5 }}
-    >
-      <span className="text-xs text-gray-400">⏱️ {label}:</span>
-      <div className="w-20 h-3 bg-gray-800 rounded-full overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${
-            isCritical ? 'bg-red-500' :
-            isLow ? 'bg-orange-500' :
-            'bg-green-500'
-          }`}
-          initial={{ width: '100%' }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.3 }}
-        />
-      </div>
-      <span className={`font-pixel text-xs ${
-        isCritical ? 'text-red-400 animate-pulse' :
-        isLow ? 'text-orange-400' :
-        'text-green-400'
-      }`}>
-        {timeLeft}s
-      </span>
-    </motion.div>
-  );
-}
-
-// Difficulty Badge Component
-function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
-  const config = DIFFICULTY_CONFIGS[difficulty];
-  const colorClass = 
-    difficulty === 'beginner' ? 'bg-green-600 border-green-400' :
-    difficulty === 'standard' ? 'bg-blue-600 border-blue-400' :
-    'bg-red-600 border-red-400';
-
-  return (
-    <div className={`px-2 py-1 rounded border-2 ${colorClass} text-white text-xs font-pixel flex items-center gap-1`}>
-      <span>{config.emoji}</span>
-      <span>{config.name}</span>
-    </div>
-  );
-}
-
-// Start Screen Component mit Schwierigkeitsauswahl
-function StartScreen({ onStart, onFaxTrigger }: { onStart: (difficulty: Difficulty) => void; onFaxTrigger: () => void }) {
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('standard');
-  const [showDifficultySelect, setShowDifficultySelect] = useState(false);
-
-  const handleStart = () => {
-    playClickSound();
-    setShowDifficultySelect(true);
-  };
-
-  const handleDifficultySelect = (difficulty: Difficulty) => {
-    playClickSound();
-    onStart(difficulty);
-  };
-
+// Start Screen Component
+function StartScreen({ onStart, onFaxTrigger }: { onStart: () => void; onFaxTrigger: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -833,7 +644,7 @@ function StartScreen({ onStart, onFaxTrigger }: { onStart: (difficulty: Difficul
         BUREAUCRACY HERO
       </motion.h1>
       <motion.h2
-        className="font-pixel text-sm md:text-base text-accent mb-6 neon-text-gold"
+        className="font-pixel text-sm md:text-base text-accent mb-8 neon-text-gold"
         initial={{ y: -20 }}
         animate={{ y: 0 }}
         transition={{ delay: 0.3 }}
@@ -841,139 +652,81 @@ function StartScreen({ onStart, onFaxTrigger }: { onStart: (difficulty: Difficul
         The BärGPT Protocol
       </motion.h2>
 
-      <AnimatePresence mode="wait">
-        {!showDifficultySelect ? (
-          <motion.div
-            key="mission"
-            className="bg-white/95 text-gray-800 p-5 rounded-xl max-w-2xl border-4 border-primary shadow-2xl max-h-[45vh] overflow-y-auto"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-primary font-bold text-base mb-2">🎯 Deine Mission</h3>
-            <p className="mb-2 text-xs leading-relaxed">
-              Die Berliner Verwaltung braucht dich! BärGPT ist da, aber offline – und damit fast nutzlos.
-              Deine Aufgabe: Überzeuge die <strong>CDO</strong>, die <strong>Online-Funktion</strong> freizuschalten.
-            </p>
-            <p className="mb-3 text-xs leading-relaxed">
-              Aber Vorsicht: Die Datenschutzbeauftragte, der Personalrat und skeptische Beschäftigte stehen dir im Weg.
-            </p>
+      <motion.div
+        className="bg-white/95 text-gray-800 p-6 rounded-xl max-w-2xl border-4 border-primary shadow-2xl max-h-[50vh] overflow-y-auto"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <h3 className="text-primary font-bold text-lg mb-3">🎯 Deine Mission</h3>
+        <p className="mb-3 text-sm leading-relaxed">
+          Die Berliner Verwaltung braucht dich! BärGPT ist da, aber offline – und damit fast nutzlos.
+          Deine Aufgabe: Überzeuge die <strong>CDO</strong>, die <strong>Online-Funktion</strong> freizuschalten.
+        </p>
+        <p className="mb-4 text-sm leading-relaxed">
+          Aber Vorsicht: Die Datenschutzbeauftragte, der Personalrat und skeptische Beschäftigte stehen dir im Weg.
+          Du musst psychologische Barrieren erkennen, Stakeholder überzeugen und mit Daten punkten.
+        </p>
 
-            <div className="grid grid-cols-2 gap-1.5 mt-3 text-xs">
-              {[
-                { level: 1, title: "Die Diagnose", desc: "Erkenne die Biases" },
-                { level: 2, title: "Der Anruf", desc: "Personalrat überzeugen" },
-                { level: 3, title: "Die Basis", desc: "Beschäftigte verstehen" },
-                { level: 4, title: "Storytelling", desc: "Baue die Heldenreise" },
-                { level: 5, title: "Data Lab", desc: "Wähle die richtigen Daten" },
-                { level: 6, title: "Boss-Kampf", desc: "Finale Konfrontation" }
-              ].map((item) => (
-                <div
-                  key={item.level}
-                  className="bg-gray-100 p-1.5 rounded-lg border-l-4 border-primary"
-                >
-                  <strong className="text-primary">L{item.level}:</strong> {item.title}
-                  <br />
-                  <small className="text-gray-600">{item.desc}</small>
-                </div>
-              ))}
-            </div>
-            
-            <div 
-              className="mt-3 text-center text-gray-400 text-xs cursor-pointer hover:text-gray-600"
-              onClick={onFaxTrigger}
+        <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
+          {[
+            { level: 1, title: "Die Diagnose", desc: "Erkenne die Biases" },
+            { level: 2, title: "Der Anruf", desc: "Personalrat überzeugen" },
+            { level: 3, title: "Die Basis", desc: "Beschäftigte verstehen" },
+            { level: 4, title: "Storytelling", desc: "Baue die Heldenreise" },
+            { level: 5, title: "Data Lab", desc: "Wähle die richtigen Daten" },
+            { level: 6, title: "Boss-Kampf", desc: "Finale Konfrontation" }
+          ].map((item) => (
+            <div
+              key={item.level}
+              className="bg-gray-100 p-2 rounded-lg border-l-4 border-primary"
             >
-              📠 Präsentation per Fax senden?
+              <strong className="text-primary">L{item.level}:</strong> {item.title}
+              <br />
+              <small className="text-gray-600">{item.desc}</small>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="difficulty"
-            className="bg-white/95 text-gray-800 p-5 rounded-xl max-w-lg border-4 border-primary shadow-2xl"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-          >
-            <h3 className="text-primary font-bold text-base mb-3 text-center">⚙️ Wähle deinen Schwierigkeitsgrad</h3>
-            
-            <div className="space-y-2">
-              {(Object.entries(DIFFICULTY_CONFIGS) as [Difficulty, DifficultyConfig][]).map(([key, config]) => (
-                <motion.button
-                  key={key}
-                  onClick={() => handleDifficultySelect(key)}
-                  className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                    key === 'beginner' ? 'border-green-400 hover:bg-green-50' :
-                    key === 'standard' ? 'border-blue-400 hover:bg-blue-50' :
-                    'border-red-400 hover:bg-red-50'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{config.emoji}</span>
-                    <div>
-                      <div className="font-bold text-sm">{config.name}</div>
-                      <div className="text-xs text-gray-600">{config.description}</div>
-                    </div>
-                  </div>
-                  {key !== 'beginner' && (
-                    <div className="mt-2 text-xs text-gray-500 flex gap-3">
-                      <span>⏱️ {config.timeLimits.level1}s/Aufgabe</span>
-                      <span>💥 {config.damageMultiplier}x Schaden</span>
-                    </div>
-                  )}
-                </motion.button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowDifficultySelect(false)}
-              className="mt-3 w-full text-xs text-gray-500 hover:text-gray-700"
-            >
-              ← Zurück zur Missionübersicht
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {!showDifficultySelect && (
-        <motion.button
-          onClick={handleStart}
-          className="mt-6 font-pixel text-sm bg-gradient-to-b from-yellow-400 to-orange-600 text-white px-10 py-5 rounded-lg shadow-[0_6px_0_#a04000,0_10px_20px_rgba(0,0,0,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_0_#a04000,0_14px_25px_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-[0_2px_0_#a04000] transition-all neon-pulse"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          ))}
+        </div>
+        
+        {/* Hidden Fax Easter Egg Trigger */}
+        <div 
+          className="mt-4 text-center text-gray-400 text-xs cursor-pointer hover:text-gray-600"
+          onClick={onFaxTrigger}
         >
-          MISSION STARTEN
-        </motion.button>
-      )}
+          📠 Präsentation per Fax senden?
+        </div>
+      </motion.div>
+
+      <motion.button
+        onClick={() => { playClickSound(); onStart(); }}
+        className="mt-8 font-pixel text-sm bg-gradient-to-b from-yellow-400 to-orange-600 text-white px-10 py-5 rounded-lg shadow-[0_6px_0_#a04000,0_10px_20px_rgba(0,0,0,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_0_#a04000,0_14px_25px_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-[0_2px_0_#a04000] transition-all neon-pulse"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.6 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        MISSION STARTEN
+      </motion.button>
     </motion.div>
   );
 }
 
-// Level 1: Bias Scanner - Mit Timer
+// Level 1: Bias Scanner - FIXED: Manueller Level-Wechsel
 function Level1({
   biasesFound,
   onBiasFound,
   onComplete,
-  onCoffeeFind,
-  timeLimit,
-  onTimeout
+  onCoffeeFind
 }: {
   biasesFound: number;
   onBiasFound: (bias: string, zone: string) => boolean;
   onComplete: () => void;
   onCoffeeFind: () => void;
-  timeLimit: number;
-  onTimeout: () => void;
 }) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [foundBiases, setFoundBiases] = useState<Set<string>>(new Set());
   const [showLevelComplete, setShowLevelComplete] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string; source?: string }>({
     show: false,
     success: false,
@@ -1051,22 +804,8 @@ function Level1({
     >
       <CoffeeEasterEgg onFind={onCoffeeFind} />
       
-      <div className="flex items-center justify-between w-full max-w-3xl mt-8 mb-2">
-        <h2 className="font-pixel text-xl text-primary neon-text-pink">Level 1: Die Diagnose</h2>
-        {timeLimit > 0 && (
-          <GameTimer 
-            key={timerKey}
-            timeLimit={timeLimit} 
-            onTimeout={() => {
-              onTimeout();
-              setTimerKey(prev => prev + 1);
-            }}
-            isPaused={feedback.show || showLevelComplete}
-            label="Pro Bias"
-          />
-        )}
-      </div>
-      <p className="text-gray-400 mb-4 text-center text-sm max-w-lg">Erkenne die psychologischen Barrieren in der E-Mail der Datenschutzbeauftragten</p>
+      <h2 className="font-pixel text-xl text-primary mb-2 mt-8 neon-text-pink">Level 1: Die Diagnose</h2>
+      <p className="text-gray-400 mb-6 text-center text-sm max-w-lg">Erkenne die psychologischen Barrieren in der E-Mail der Datenschutzbeauftragten</p>
 
       <div className="bg-gradient-to-b from-[#3d3d5c] to-[#2d2d44] border-3 border-gray-600 rounded-xl p-6 w-full max-w-3xl">
         <div className="bg-white text-gray-800 p-5 rounded-lg mb-5 border-2 border-gray-300">
@@ -1172,22 +911,17 @@ function Level2({
   personalratHP,
   playerHP,
   onCounter,
-  onComplete,
-  timeLimit,
-  onTimeout
+  onComplete
 }: {
   round: number;
   personalratHP: number;
   playerHP: number;
   onCounter: (power: number, damage: number) => void;
   onComplete: () => void;
-  timeLimit: number;
-  onTimeout: () => void;
 }) {
   const [currentAttack, setCurrentAttack] = useState<typeof PERSONALRAT_ATTACKS[0] | null>(null);
   const [battleLog, setBattleLog] = useState<string>("Das Telefon klingelt...");
   const [canPlay, setCanPlay] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
   const [showLightning, setShowLightning] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string }>({
@@ -1284,22 +1018,8 @@ function Level2({
     >
       <LightningEffect show={showLightning} />
       
-      <div className="flex items-center justify-between w-full max-w-4xl mb-2">
-        <h2 className="font-pixel text-lg text-primary neon-text-pink">Level 2: Der Anruf</h2>
-        {timeLimit > 0 && (
-          <GameTimer 
-            key={timerKey}
-            timeLimit={timeLimit} 
-            onTimeout={() => {
-              onTimeout();
-              setTimerKey(prev => prev + 1);
-            }}
-            isPaused={feedback.show || showLevelComplete || !canPlay}
-            label="Pro Runde"
-          />
-        )}
-      </div>
-      <p className="text-gray-400 mb-3 text-center text-xs">Überzeuge die Vorsitzende des Hauptpersonalrats</p>
+      <h2 className="font-pixel text-lg text-primary mb-2 neon-text-pink">Level 2: Der Anruf</h2>
+      <p className="text-gray-400 mb-4 text-center text-xs">Überzeuge die Vorsitzende des Hauptpersonalrats</p>
 
       {/* Battle Arena - FIXED: Contained HP bars */}
       <div className="w-full max-w-4xl grid grid-cols-2 gap-4 mb-4">
@@ -1421,23 +1141,18 @@ function Level3({
   currentQuestion,
   correctChoices,
   onAnswer,
-  onComplete,
-  timeLimit,
-  onTimeout
+  onComplete
 }: {
   currentQuestion: number;
   correctChoices: number;
   onAnswer: (correct: boolean) => void;
   onComplete: () => void;
-  timeLimit: number;
-  onTimeout: () => void;
 }) {
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string }>({
     show: false, success: false, title: "", text: ""
   });
   const [answered, setAnswered] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
 
   const survey = SURVEY_RESULTS[currentQuestion];
   
@@ -1512,22 +1227,8 @@ function Level3({
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
     >
-      <div className="flex items-center justify-between w-full max-w-2xl mb-2">
-        <h2 className="font-pixel text-xl text-primary neon-text-pink">Level 3: Die Stimme der Basis</h2>
-        {timeLimit > 0 && (
-          <GameTimer 
-            key={timerKey}
-            timeLimit={timeLimit} 
-            onTimeout={() => {
-              onTimeout();
-              setTimerKey(prev => prev + 1);
-            }}
-            isPaused={feedback.show || showLevelComplete || answered}
-            label="Pro Frage"
-          />
-        )}
-      </div>
-      <p className="text-gray-400 mb-4 text-center text-sm">Analysiere die Bedarfsabfrage der Beschäftigten</p>
+      <h2 className="font-pixel text-xl text-primary mb-2 neon-text-pink">Level 3: Die Stimme der Basis</h2>
+      <p className="text-gray-400 mb-6 text-center text-sm">Analysiere die Bedarfsabfrage der Beschäftigten</p>
 
       <div className="bg-gradient-to-b from-[#3d3d5c] to-[#2d2d44] border-3 border-gray-600 rounded-xl p-6 w-full max-w-2xl">
         <div className="bg-white text-gray-800 p-5 rounded-lg mb-5">
@@ -1583,21 +1284,16 @@ function Level3({
 function Level4({
   storiesPlaced,
   onStoryPlaced,
-  onComplete,
-  timeLimit,
-  onTimeout
+  onComplete
 }: {
   storiesPlaced: number;
   onStoryPlaced: () => boolean;
   onComplete: () => void;
-  timeLimit: number;
-  onTimeout: () => void;
 }) {
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
   const [placedStories, setPlacedStories] = useState<Map<number, string>>(new Map());
   const [usedBlocks, setUsedBlocks] = useState<Set<string>>(new Set());
   const [showLevelComplete, setShowLevelComplete] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string }>({
     show: false, success: false, title: "", text: ""
   });
@@ -1689,22 +1385,8 @@ function Level4({
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98 overflow-y-auto"
     >
-      <div className="flex items-center justify-between w-full max-w-4xl mb-2">
-        <h2 className="font-pixel text-xl text-primary neon-text-pink">Level 4: Der Überzeugungs-Plan</h2>
-        {timeLimit > 0 && (
-          <GameTimer 
-            key={timerKey}
-            timeLimit={timeLimit} 
-            onTimeout={() => {
-              onTimeout();
-              setTimerKey(prev => prev + 1);
-            }}
-            isPaused={feedback.show || showLevelComplete}
-            label="Pro Element"
-          />
-        )}
-      </div>
-      <p className="text-gray-400 mb-3 text-center text-sm">Baue die perfekte Heldenreise für deine Präsentation</p>
+      <h2 className="font-pixel text-xl text-primary mb-2 neon-text-pink">Level 4: Der Überzeugungs-Plan</h2>
+      <p className="text-gray-400 mb-4 text-center text-sm">Baue die perfekte Heldenreise für deine Präsentation</p>
 
       <div className="w-full max-w-4xl">
         {/* Timeline Slots */}
@@ -1795,23 +1477,18 @@ function Level5({
   currentQuestion,
   correctChoices,
   onAnswer,
-  onComplete,
-  timeLimit,
-  onTimeout
+  onComplete
 }: {
   currentQuestion: number;
   correctChoices: number;
   onAnswer: (correct: boolean) => void;
   onComplete: () => void;
-  timeLimit: number;
-  onTimeout: () => void;
 }) {
   const [feedback, setFeedback] = useState<{ show: boolean; success: boolean; title: string; text: string }>({
     show: false, success: false, title: "", text: ""
   });
   const [answered, setAnswered] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
 
   const question = DATA_QUESTIONS[currentQuestion];
   
@@ -1882,22 +1559,8 @@ function Level5({
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex flex-col items-center justify-center p-8 pt-24 bg-[#141428]/98"
     >
-      <div className="flex items-center justify-between w-full max-w-2xl mb-2">
-        <h2 className="font-pixel text-xl text-primary neon-text-pink">Level 5: Data Intelligence</h2>
-        {timeLimit > 0 && (
-          <GameTimer 
-            key={timerKey}
-            timeLimit={timeLimit} 
-            onTimeout={() => {
-              onTimeout();
-              setTimerKey(prev => prev + 1);
-            }}
-            isPaused={feedback.show || showLevelComplete || answered}
-            label="Pro Frage"
-          />
-        )}
-      </div>
-      <p className="text-gray-400 mb-4 text-center text-sm">Wähle die überzeugendsten Datenvisualisierungen</p>
+      <h2 className="font-pixel text-xl text-primary mb-2 neon-text-pink">Level 5: Data Intelligence</h2>
+      <p className="text-gray-400 mb-6 text-center text-sm">Wähle die überzeugendsten Datenvisualisierungen</p>
 
       <div className="bg-gradient-to-b from-[#3d3d5c] to-[#2d2d44] border-3 border-gray-600 rounded-xl p-6 w-full max-w-2xl">
         <div className="bg-white text-gray-800 p-5 rounded-lg mb-5">
@@ -1954,17 +1617,13 @@ function Level6({
   onPlayCard,
   onEnemyAttack,
   onWin,
-  onReset,
-  timeLimit,
-  onTimeout
+  onReset
 }: {
   gameState: GameState;
   onPlayCard: (card: typeof PLAYER_CARDS[0]) => void;
   onEnemyAttack: (damage: number) => void;
   onWin: () => void;
   onReset: () => void;
-  timeLimit: number;
-  onTimeout: () => void;
 }) {
   const [currentAttack, setCurrentAttack] = useState<typeof ENEMY_ATTACKS[0] | null>(null);
   const [battleLog, setBattleLog] = useState<string>("Das finale Meeting beginnt...");
@@ -1972,7 +1631,6 @@ function Level6({
   const [canPlay, setCanPlay] = useState(false);
   const [showLightning, setShowLightning] = useState(false);
   const [phase, setPhase] = useState<'enemy' | 'player' | 'cdo'>('enemy');
-  const [timerKey, setTimerKey] = useState(0);
   const roundRef = useRef(0);
   const usedEnemyAttacksRef = useRef<Set<number>>(new Set());
 
@@ -2076,22 +1734,8 @@ function Level6({
     >
       <LightningEffect show={showLightning} />
       
-      <div className="flex items-center justify-between w-full max-w-4xl mb-2">
-        <h2 className="font-pixel text-lg text-primary neon-text-pink">Level 6: Der Boss-Kampf</h2>
-        {timeLimit > 0 && (
-          <GameTimer 
-            key={timerKey}
-            timeLimit={timeLimit} 
-            onTimeout={() => {
-              onTimeout();
-              setTimerKey(prev => prev + 1);
-            }}
-            isPaused={!canPlay || phase !== 'player'}
-            label="Pro Zug"
-          />
-        )}
-      </div>
-      <p className="text-gray-400 mb-2 text-center text-xs">Überzeuge die CDO im finalen Showdown!</p>
+      <h2 className="font-pixel text-lg text-primary mb-2 neon-text-pink">Level 6: Der Boss-Kampf</h2>
+      <p className="text-gray-400 mb-3 text-center text-xs">Überzeuge die CDO im finalen Showdown!</p>
 
       {/* Battle Arena */}
       <div className="w-full max-w-4xl grid grid-cols-3 gap-2 mb-3">
@@ -2422,22 +2066,19 @@ export default function Home() {
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [savedProgress, setSavedProgress] = useState<{ screen: string; gameState: GameState; savedAt: string } | null>(null);
   
-  const createInitialGameState = (difficulty: Difficulty): GameState => ({
+  const initialGameState: GameState = {
     currentLevel: 1,
     approval: 30,
     energy: 100,
     coffeeFound: false,
     faxTriggered: false,
-    difficulty,
     level1: { biasesFound: 0, completed: false },
     level2: { round: 0, personalratHP: 100, playerHP: 100, completed: false },
     level3: { currentQuestion: 0, correctChoices: 0, completed: false },
     level4: { storiesPlaced: 0, completed: false },
     level5: { currentQuestion: 0, correctChoices: 0, completed: false },
     level6: { playerHP: 100, enemyHP: 100, cdoMeter: 30, round: 0, completed: false }
-  });
-
-  const initialGameState = createInitialGameState('standard');
+  };
   
   const [gameState, setGameState] = useState<GameState>(initialGameState);
 
@@ -2457,9 +2098,9 @@ export default function Home() {
     }
   }, [screen, gameState]);
 
-  const startGame = useCallback((difficulty: Difficulty) => {
+  const startGame = useCallback(() => {
     clearGameProgress();
-    setGameState(createInitialGameState(difficulty));
+    setGameState(initialGameState);
     setScreen("level1");
   }, []);
 
@@ -2501,17 +2142,6 @@ export default function Home() {
     }));
     return true;
   }, []);
-
-  // Timeout-Handler für alle Level
-  const handleTimeout = useCallback(() => {
-    const config = DIFFICULTY_CONFIGS[gameState.difficulty];
-    const damage = Math.floor(10 * config.damageMultiplier);
-    setGameState(prev => ({
-      ...prev,
-      energy: Math.max(0, prev.energy - damage),
-      approval: Math.max(0, prev.approval - 3)
-    }));
-  }, [gameState.difficulty]);
 
   const handleLevel1Complete = useCallback(() => {
     setGameState(prev => ({
@@ -2658,7 +2288,6 @@ export default function Home() {
             level={currentLevel}
             energy={gameState.energy}
             coffeeFound={gameState.coffeeFound}
-            difficulty={gameState.difficulty}
           />
         )}
 
@@ -2728,8 +2357,6 @@ export default function Home() {
               onBiasFound={handleBiasFound}
               onComplete={handleLevel1Complete}
               onCoffeeFind={handleCoffeeFind}
-              timeLimit={DIFFICULTY_CONFIGS[gameState.difficulty].timeLimits.level1}
-              onTimeout={handleTimeout}
             />
           )}
           
@@ -2741,8 +2368,6 @@ export default function Home() {
               playerHP={gameState.level2.playerHP}
               onCounter={handlePersonalratCounter}
               onComplete={handleLevel2Complete}
-              timeLimit={DIFFICULTY_CONFIGS[gameState.difficulty].timeLimits.level2}
-              onTimeout={handleTimeout}
             />
           )}
           
@@ -2753,8 +2378,6 @@ export default function Home() {
               correctChoices={gameState.level3.correctChoices}
               onAnswer={handleSurveyAnswer}
               onComplete={handleLevel3Complete}
-              timeLimit={DIFFICULTY_CONFIGS[gameState.difficulty].timeLimits.level3}
-              onTimeout={handleTimeout}
             />
           )}
           
@@ -2762,8 +2385,6 @@ export default function Home() {
             <Level4
               key="level4"
               storiesPlaced={gameState.level4.storiesPlaced}
-              timeLimit={DIFFICULTY_CONFIGS[gameState.difficulty].timeLimits.level4}
-              onTimeout={handleTimeout}
               onStoryPlaced={handleStoryPlaced}
               onComplete={handleLevel4Complete}
             />
@@ -2776,8 +2397,6 @@ export default function Home() {
               correctChoices={gameState.level5.correctChoices}
               onAnswer={handleDataAnswer}
               onComplete={handleLevel5Complete}
-              timeLimit={DIFFICULTY_CONFIGS[gameState.difficulty].timeLimits.level5}
-              onTimeout={handleTimeout}
             />
           )}
           
@@ -2789,8 +2408,6 @@ export default function Home() {
               onEnemyAttack={handleEnemyAttack}
               onWin={handleWin}
               onReset={handleLevel6Reset}
-              timeLimit={DIFFICULTY_CONFIGS[gameState.difficulty].timeLimits.level6}
-              onTimeout={handleTimeout}
             />
           )}
           
