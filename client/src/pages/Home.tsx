@@ -262,7 +262,8 @@ const PERSONALRAT_COUNTERS = [
   { id: "mitbestimmung", name: "Mitbestimmungs-Angebot", icon: "🤝", effect: "+25", power: 25, description: "Wir laden den Personalrat in die Pilotgruppe ein – echte Mitgestaltung!" },
   { id: "qualifizierung", name: "Qualifizierungs-Versprechen", icon: "📚", effect: "+15", power: 15, description: "Schulungen während der Arbeitszeit, keine Überstunden." },
   { id: "pilotphase", name: "Freiwillige Pilotphase", icon: "🧪", effect: "+20", power: 20, description: "Nur interessierte Kolleg*innen testen zuerst – kein Zwang." },
-  { id: "jargon", name: "Verwaltungs-Jargon", icon: "📜", effect: "0", power: 0, description: "Gemäß §3 Abs. 2 der Verwaltungsvorschrift..." }
+  { id: "jargon", name: "Verwaltungs-Jargon", icon: "📜", effect: "0", power: 0, description: "Gemäß §3 Abs. 2 der Verwaltungsvorschrift..." },
+  { id: "erfolgsbeispiel", name: "Erfolgsbeispiel", icon: "🏆", effect: "+15", power: 15, description: "In Hamburg hat der Personalrat die KI-Einführung aktiv mitgestaltet – mit messbarem Erfolg für alle Beteiligten!" }
 ];
 
 // Beschäftigten-Bedarfsabfrage Daten
