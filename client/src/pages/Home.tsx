@@ -72,7 +72,7 @@ const playAttackSound = () => {
 };
 
 // Pokémon Battle Music für Level 2
-const BATTLE_MUSIC_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/117718736/VGZAbtomnVDxrLdx.mp3';
+const BATTLE_MUSIC_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/117718736/fVyDxmZHxvlWENBl.mp3';
 
 // Globale Audio-Instanz die persistent bleibt
 let battleMusicInstance: HTMLAudioElement | null = null;
