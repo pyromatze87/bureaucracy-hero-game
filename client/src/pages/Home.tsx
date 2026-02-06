@@ -73,34 +73,55 @@ const playAttackSound = () => {
 
 // Pokémon Battle Music für Level 2
 const BATTLE_MUSIC_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/117718736/VGZAbtomnVDxrLdx.mp3';
-let battleMusicAudio: HTMLAudioElement | null = null;
+
+// Globale Audio-Instanz die persistent bleibt
+let battleMusicInstance: HTMLAudioElement | null = null;
+let battleMusicShouldPlay = false;
+
+// Erstelle Audio-Element einmalig und preloade es
+const getBattleMusicInstance = (): HTMLAudioElement => {
+  if (!battleMusicInstance) {
+    battleMusicInstance = new Audio(BATTLE_MUSIC_URL);
+    battleMusicInstance.loop = true;
+    battleMusicInstance.volume = 0.3;
+    battleMusicInstance.preload = 'auto';
+  }
+  return battleMusicInstance;
+};
 
 const playBattleMusic = () => {
+  battleMusicShouldPlay = true;
   try {
-    if (battleMusicAudio) {
-      battleMusicAudio.pause();
-      battleMusicAudio.currentTime = 0;
+    const audio = getBattleMusicInstance();
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        // Autoplay blocked - wird beim nächsten Klick erneut versucht
+        console.log('Battle music autoplay blocked, will retry on next click');
+      });
     }
-    battleMusicAudio = new Audio(BATTLE_MUSIC_URL);
-    battleMusicAudio.loop = true;
-    battleMusicAudio.volume = 0.3;
-    battleMusicAudio.play().catch(() => {
-      // Autoplay blocked - wird beim nächsten User-Klick versucht
-    });
+  } catch (e) {
+    console.log('Audio not supported');
+  }
+};
+
+const stopBattleMusic = () => {
+  battleMusicShouldPlay = false;
+  try {
+    if (battleMusicInstance) {
+      battleMusicInstance.pause();
+      battleMusicInstance.currentTime = 0;
+    }
   } catch (e) {
     // Audio not supported
   }
 };
 
-const stopBattleMusic = () => {
-  try {
-    if (battleMusicAudio) {
-      battleMusicAudio.pause();
-      battleMusicAudio.currentTime = 0;
-      battleMusicAudio = null;
-    }
-  } catch (e) {
-    // Audio not supported
+// Versuche Musik bei jedem User-Klick erneut zu starten (falls Autoplay blockiert war)
+const retryBattleMusicOnInteraction = () => {
+  if (battleMusicShouldPlay && battleMusicInstance && battleMusicInstance.paused) {
+    battleMusicInstance.play().catch(() => {});
   }
 };
 
@@ -961,17 +982,57 @@ function Level2({
     show: false, success: false, title: "", text: ""
   });
   const usedAttacksRef = useRef<Set<number>>(new Set());
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Randomize counters
   const counters = useMemo(() => shuffleArray([...PERSONALRAT_COUNTERS]), [round]);
 
-  // Starte Battle Music beim Mount, stoppe beim Unmount
+  // Battle Music Management
   useEffect(() => {
-    playBattleMusic();
+    const audio = getBattleMusicInstance();
+    audioRef.current = audio;
+    
+    // Starte Musik (wurde ggf. schon im Click-Handler gestartet)
+    if (!battleMusicInstance || battleMusicInstance.paused) {
+      playBattleMusic();
+    }
+    
+    // Prüfe periodisch ob Musik läuft und aktualisiere State
+    const checkInterval = setInterval(() => {
+      if (audioRef.current) {
+        setMusicPlaying(!audioRef.current.paused);
+      }
+    }, 500);
+    
+    // Globaler Click-Handler um Autoplay-Block zu umgehen
+    const handleGlobalClick = () => {
+      retryBattleMusicOnInteraction();
+      setTimeout(() => {
+        if (audioRef.current) {
+          setMusicPlaying(!audioRef.current.paused);
+        }
+      }, 100);
+    };
+    document.addEventListener('click', handleGlobalClick);
+    
     return () => {
+      clearInterval(checkInterval);
+      document.removeEventListener('click', handleGlobalClick);
       stopBattleMusic();
     };
   }, []);
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (audioRef.current.paused) {
+        audioRef.current.play().then(() => setMusicPlaying(true)).catch(() => {});
+      } else {
+        audioRef.current.pause();
+        setMusicPlaying(false);
+      }
+    }
+  };
 
   useEffect(() => {
     setTimeout(() => {
@@ -997,6 +1058,7 @@ function Level2({
 
   const handleCounter = (counter: typeof PERSONALRAT_COUNTERS[0]) => {
     if (!canPlay || !currentAttack) return;
+    retryBattleMusicOnInteraction(); // Versuche Musik zu starten falls Autoplay blockiert war
     playClickSound();
     setCanPlay(false);
 
@@ -1059,7 +1121,20 @@ function Level2({
     >
       <LightningEffect show={showLightning} />
       
-      <h2 className="font-pixel text-lg text-primary mb-2 neon-text-pink">Level 2: Der Anruf</h2>
+      <div className="flex items-center gap-3 mb-2">
+        <h2 className="font-pixel text-lg text-primary neon-text-pink">Level 2: Der Anruf</h2>
+        <button
+          onClick={toggleMusic}
+          className={`px-3 py-1 rounded-lg text-xs font-pixel border-2 transition-all ${
+            musicPlaying 
+              ? 'bg-green-900/60 border-green-500 text-green-300 animate-pulse' 
+              : 'bg-red-900/60 border-red-500 text-red-300 hover:bg-red-800/60'
+          }`}
+          title={musicPlaying ? 'Musik pausieren' : 'Musik abspielen'}
+        >
+          {musicPlaying ? '\u266B ON' : '\u266B OFF'}
+        </button>
+      </div>
       <p className="text-gray-400 mb-4 text-center text-xs">Überzeuge die Vorsitzende des Hauptpersonalrats</p>
 
       {/* Battle Arena - FIXED: Contained HP bars */}
@@ -2185,6 +2260,8 @@ export default function Home() {
   }, []);
 
   const handleLevel1Complete = useCallback(() => {
+    // Starte Battle Music SOFORT im Click-Handler (synchron), damit Browser Autoplay erlaubt
+    playBattleMusic();
     setGameState(prev => ({
       ...prev,
       level1: { ...prev.level1, completed: true }
