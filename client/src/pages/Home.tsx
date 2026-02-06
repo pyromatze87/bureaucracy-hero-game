@@ -1820,6 +1820,7 @@ function Level6({
     onPlayCard(card);
     roundRef.current++;
 
+    // 5 Sekunden Anzeigedauer damit der Spieler die Antwort lesen kann
     setTimeout(() => {
       const newCdoMeter = level6.cdoMeter + card.power;
       const newEnemyHP = level6.enemyHP - Math.max(0, card.power);
@@ -1845,7 +1846,7 @@ function Level6({
         drawCards();
         setTimeout(() => enemyTurn(), 1000);
       }
-    }, 500);
+    }, 5000);
   };
 
   return (
