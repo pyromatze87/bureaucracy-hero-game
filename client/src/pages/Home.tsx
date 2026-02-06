@@ -118,9 +118,12 @@ const stopBattleMusic = () => {
   }
 };
 
+// Tracking ob der User die Musik manuell gemutet hat
+let battleMusicUserMuted = false;
+
 // Versuche Musik bei jedem User-Klick erneut zu starten (falls Autoplay blockiert war)
 const retryBattleMusicOnInteraction = () => {
-  if (battleMusicShouldPlay && battleMusicInstance && battleMusicInstance.paused) {
+  if (battleMusicShouldPlay && !battleMusicUserMuted && battleMusicInstance && battleMusicInstance.paused) {
     battleMusicInstance.play().catch(() => {});
   }
 };
@@ -1023,11 +1026,14 @@ function Level2({
     };
   }, []);
 
-  const toggleMusic = () => {
+  const toggleMusic = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Verhindere dass der globale Click-Handler die Musik wieder startet
     if (audioRef.current) {
       if (audioRef.current.paused) {
+        battleMusicUserMuted = false;
         audioRef.current.play().then(() => setMusicPlaying(true)).catch(() => {});
       } else {
+        battleMusicUserMuted = true;
         audioRef.current.pause();
         setMusicPlaying(false);
       }
