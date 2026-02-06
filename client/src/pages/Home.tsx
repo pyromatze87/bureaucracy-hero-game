@@ -71,6 +71,39 @@ const playAttackSound = () => {
   });
 };
 
+// Pokémon Battle Music für Level 2
+const BATTLE_MUSIC_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/117718736/VGZAbtomnVDxrLdx.mp3';
+let battleMusicAudio: HTMLAudioElement | null = null;
+
+const playBattleMusic = () => {
+  try {
+    if (battleMusicAudio) {
+      battleMusicAudio.pause();
+      battleMusicAudio.currentTime = 0;
+    }
+    battleMusicAudio = new Audio(BATTLE_MUSIC_URL);
+    battleMusicAudio.loop = true;
+    battleMusicAudio.volume = 0.3;
+    battleMusicAudio.play().catch(() => {
+      // Autoplay blocked - wird beim nächsten User-Klick versucht
+    });
+  } catch (e) {
+    // Audio not supported
+  }
+};
+
+const stopBattleMusic = () => {
+  try {
+    if (battleMusicAudio) {
+      battleMusicAudio.pause();
+      battleMusicAudio.currentTime = 0;
+      battleMusicAudio = null;
+    }
+  } catch (e) {
+    // Audio not supported
+  }
+};
+
 // ==================== UTILITY FUNCTIONS ====================
 
 // LocalStorage Keys
@@ -932,6 +965,14 @@ function Level2({
   // Randomize counters
   const counters = useMemo(() => shuffleArray([...PERSONALRAT_COUNTERS]), [round]);
 
+  // Starte Battle Music beim Mount, stoppe beim Unmount
+  useEffect(() => {
+    playBattleMusic();
+    return () => {
+      stopBattleMusic();
+    };
+  }, []);
+
   useEffect(() => {
     setTimeout(() => {
       // Wähle eine Attacke, die noch nicht verwendet wurde
@@ -1027,7 +1068,7 @@ function Level2({
         <div className="bg-gradient-to-b from-red-900/80 to-red-950/80 border-2 border-red-500 rounded-xl p-3 flex items-center gap-3">
           <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-red-400 flex-shrink-0">
             <img 
-              src="/images/frau-mueller.png" 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/117718736/ClnfQoLAoBXtuTJa.png" 
               alt="Frau Müller"
               className="w-full h-full object-cover"
               onError={(e) => { e.currentTarget.src = ''; e.currentTarget.style.display = 'none'; }}
@@ -1051,7 +1092,7 @@ function Level2({
         <div className="bg-gradient-to-b from-blue-900/80 to-blue-950/80 border-2 border-blue-500 rounded-xl p-3 flex items-center gap-3">
           <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-blue-400 flex-shrink-0">
             <img 
-              src="/images/player-character.png" 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/117718736/pjBZgZuEdFCqsiOb.png" 
               alt="Du"
               className="w-full h-full object-cover"
               onError={(e) => { e.currentTarget.src = ''; e.currentTarget.style.display = 'none'; }}
@@ -1744,7 +1785,7 @@ function Level6({
           <div className="flex items-center gap-2 mb-2">
             <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-blue-400 flex-shrink-0">
               <img 
-                src="/images/player-character.png" 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/117718736/pjBZgZuEdFCqsiOb.png" 
                 alt="Du"
                 className="w-full h-full object-cover"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -1770,7 +1811,7 @@ function Level6({
           <div className="flex items-center gap-2 mb-2">
             <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-teal-400 flex-shrink-0">
               <img 
-                src="/images/cdo-character.png" 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/117718736/OYEYuonlDLcwoPuV.png" 
                 alt="CDO"
                 className="w-full h-full object-cover"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -1797,7 +1838,7 @@ function Level6({
           <div className="flex items-center gap-2 mb-2">
             <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-purple-400 flex-shrink-0">
               <img 
-                src="/images/frau-dsgvo.png" 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/117718736/WJwsYyKUyuPICfls.png" 
                 alt="Frau D.S. Gvo"
                 className="w-full h-full object-cover"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
